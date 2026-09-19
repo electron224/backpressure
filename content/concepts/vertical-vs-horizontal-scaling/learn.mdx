@@ -2,9 +2,9 @@
 
 Scale up (vertical) means a bigger box: one server with concurrency 8. Scale out (horizontal) means more boxes: a balancer over four small servers. Both sides hold 320 RPS of total capacity — 8 / 0.025s for the fat box, four times 2 / 0.025s for the wide side.
 
-## Same capacity, same numbers
+## Same capacity, nearly the same numbers
 
-At 200 RPS both rows pass with room to spare — and their p99s match. Under even load with ample headroom, the shape of the fleet does not matter. Only capacity and load decide.
+At 200 RPS both rows pass with room to spare — and their p99s land nearly identically at the same seed and load. Under even load with ample headroom, the shape of the fleet does not matter. Only capacity and load decide.
 
 ## Push to 300
 

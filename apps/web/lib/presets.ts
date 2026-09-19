@@ -3,8 +3,9 @@ import { LabPresetSchema } from "@backpressure/concept-engine";
 import type { LabPreset } from "@backpressure/concept-engine";
 // Extensionless: matches the existing web import style (moduleResolution "node").
 import { labPreset as loadBalancing } from "../../../content/concepts/load-balancing/lab";
+import { labPreset as singlePointOfFailure } from "../../../content/concepts/single-point-of-failure/lab";
 
-const presets: Record<string, unknown> = { "load-balancing": loadBalancing };
+const presets: Record<string, unknown> = { "load-balancing": loadBalancing, "single-point-of-failure": singlePointOfFailure };
 
 export function presetSlugs(): string[] {
   return Object.keys(presets);

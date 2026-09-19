@@ -120,8 +120,15 @@ export function ConceptLab({
 
   function injectChaos(): void {
     // Deterministic counter seed — never Date.now() (determinism discipline).
-    // Backends come from the base topology's service nodes, never literals.
-    const backends = preset.topology.nodes.filter((node) => node.kind === "service").map((node) => node.id);
+    // Backends are the union of service ids across the base topology and all
+    // variant topologies, so variant-specific backends are killable too.
+    // Unknown drop ids stay a no-op inside runPreset.
+    const topologies = [preset.topology, ...(preset.variants ?? []).flatMap((v) => (v.topology ? [v.topology] : []))];
+    const backends = [
+      ...new Set(
+        topologies.flatMap((topology) => topology.nodes.filter((node) => node.kind === "service").map((node) => node.id)),
+      ),
+    ];
     const fault = pickRandomFault(createRng(SEED + chaosCount * 101), backends);
     setChaosCount((c) => c + 1);
     if (fault.fault === "kill-node") {

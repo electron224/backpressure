@@ -1,0 +1,15 @@
+# Single Point of Failure
+
+A single point of failure (SPOF) is any component whose failure takes down the whole system. One web server, one database, one load balancer with no peer — if it dies, every request fails, no matter how healthy everything else is.
+
+## The fix: redundancy plus routing
+
+Redundancy means running more than one copy: two identical web servers instead of one. But copies alone are not enough — traffic must reach the survivors. A load balancer in front of the replicas does that: it spreads requests across healthy backends and stops sending traffic to a dead one.
+
+Either half alone fails the lesson. Replicas without a balancer leave clients pinned to the dead machine. A balancer with one backend behind it is just a more expensive SPOF.
+
+## How the lab proves it
+
+The single variant is one server. Kill it and every request fails — the row goes red and the narration says all backends are down. The replicated variant adds a load balancer over two identical servers. Kill one and the survivor absorbs the load, so p99 barely moves.
+
+Press the chaos button and watch both rows. The design that survives a dead backend is the one with no SPOF.

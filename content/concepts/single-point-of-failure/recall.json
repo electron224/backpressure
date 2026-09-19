@@ -1,0 +1,5 @@
+[
+  { "id": "spof-r1", "q": "What is a single point of failure?", "a": "A component whose failure alone takes down the whole system — for example, one web server with no peer." },
+  { "id": "spof-r2", "q": "Why do replicas need a load balancer in front of them?", "a": "Copies alone do not reroute traffic; the balancer spreads requests across healthy backends and skips the dead one." },
+  { "id": "spof-r3", "q": "What did the kill-node chaos prove in this lab?", "a": "The single server failed every request, while the replicated pair kept passing — redundancy plus routing removes the SPOF." }
+]

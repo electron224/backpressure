@@ -1,0 +1,8 @@
+{
+  "id": "single-point-of-failure",
+  "title": "Single Point of Failure",
+  "prerequisites": [],
+  "difficulty": "beginner",
+  "estimated_minutes": 15,
+  "tags": ["fundamentals", "tier-1"]
+}

@@ -23,9 +23,22 @@ describe("runPreset LB parity (seed 7, 80 RPS)", () => {
     expect(result.p99).toBeLessThan(150);
   });
 
-  it("throws on unknown strategy", () => {
+  // Binding ruling (Task 4 gap fix): a missing/invalid strategy defaults to
+  // round-robin when an lb node exists, so presets without a strategy
+  // control (e.g. SPOF replicated) run instead of throwing.
+  it("defaults an unknown strategy to round-robin", () => {
     const preset = LabPresetSchema.parse(labPreset);
-    expect(() => runPreset(preset, lbValues("magic-hash", 80))).toThrow(/unknown strategy/i);
+    const result = runPreset(preset, lbValues("magic-hash", 80));
+    expect(result.verdict).toBe("FAIL");
+    expect(result.p99).toBeGreaterThan(1000);
+  });
+
+  it("defaults a missing strategy to round-robin", () => {
+    const preset = LabPresetSchema.parse(labPreset);
+    const result = runPreset(preset, { rps: 80 });
+    const rr = runPreset(preset, lbValues("round-robin", 80));
+    expect(result.verdict).toBe("FAIL");
+    expect(result.p99).toBe(rr.p99);
   });
 
   it("sticky pins the first backend", () => {

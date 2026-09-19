@@ -91,11 +91,11 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
     backends.map((b) => [b, createService(b, resolvedServiceConfig(topology, b, values, preset.id))]),
   );
 
+  // No strategy control on presets like SPOF (lb node, no strategy value):
+  // default a missing/invalid strategy to round-robin. Twins are identical
+  // there, so RR is correct; LB presets set strategy explicitly via control.
   const strategyRaw: unknown = values["strategy"];
-  const strategy = typeof strategyRaw === "string" ? strategyRaw : "";
-  if (lbNode && strategy !== "round-robin" && strategy !== "least-connections" && strategy !== "sticky") {
-    throw new Error(`preset '${preset.id}': unknown strategy '${strategy}'`);
-  }
+  const strategy = strategyRaw === "least-connections" || strategyRaw === "sticky" ? strategyRaw : "round-robin";
 
   const handlers = new Map<string, HandlerFn>();
   if (lbNode) {

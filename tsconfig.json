@@ -1,6 +1,8 @@
 {
   "compilerOptions": {
     "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "strict": true,
@@ -12,5 +14,5 @@
     "rootDir": ".",
     "types": ["node"]
   },
-  "include": ["packages/*/src/**/*.ts", "packages/*/tests/**/*.ts", "content/**/*.ts", "demo/**/*.ts", "vitest.config.ts"]
+  "include": ["packages/*/src/**/*.ts", "packages/*/tests/**/*.ts", "content/**/*.ts", "demo/**/*.ts", "apps/**/*.ts", "apps/**/*.tsx", "vitest.config.ts"]
 }

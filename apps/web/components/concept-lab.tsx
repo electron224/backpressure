@@ -2,53 +2,19 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { compile, createRng, run } from "@backpressure/sim-core";
-import type { HandlerFn } from "@backpressure/sim-core";
-import { createLoadBalancer, createService } from "@backpressure/sim-components";
-import type { LbStrategy } from "@backpressure/sim-components";
+import { createRng } from "@backpressure/sim-core";
 import {
   createProgress,
   gradePrediction,
   pickRandomFault,
   predictionError,
+  runPreset,
 } from "@backpressure/concept-engine";
-import type { Challenge, RecallItem, StorageLike } from "@backpressure/concept-engine";
-// 3 levels up: components -> web -> apps -> repo root (plan's 4-up path is a typo).
-import { labPreset } from "../../../content/concepts/load-balancing/lab";
+import type { Challenge, LabPreset, PresetValues, RecallItem, StorageLike } from "@backpressure/concept-engine";
 import { MetricTable } from "./metric-table";
 import type { LabRow } from "./metric-table";
 
 const SEED = 7;
-const SLO_P99_MS = 150;
-
-interface ServiceConfig {
-  serviceMs: number;
-  concurrency: number;
-  queueLimit: number;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-function numberField(config: Record<string, unknown>, key: string, fallback: number): number {
-  const value: unknown = config[key];
-  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
-}
-
-// Type-guard read over the preset node config (global no-`as` rule wins over a cast).
-function serviceConfig(id: string): ServiceConfig {
-  const node = labPreset.topology.nodes.find((n) => n.id === id);
-  const raw: unknown = node?.config;
-  if (!isRecord(raw)) {
-    return { serviceMs: 20, concurrency: 2, queueLimit: 50 };
-  }
-  return {
-    serviceMs: numberField(raw, "serviceMs", 20),
-    concurrency: numberField(raw, "concurrency", 2),
-    queueLimit: numberField(raw, "queueLimit", 50),
-  };
-}
 
 // SSR-safe store: client components prerender on the server, where `window`
 // does not exist. Fall back to an in-memory store for that first render.
@@ -68,50 +34,29 @@ function browserStore(): StorageLike {
   };
 }
 
-function runStrategy(strategy: LbStrategy, rps: number, dropBackend?: string): { p99: number; narration: string } {
-  const backends = ["fast", "slow"].filter((b) => b !== dropBackend);
-  const graph = compile({
-    nodes: [
-      { id: "lb", kind: "lb", config: {} },
-      ...backends.map((b) => ({ id: b, kind: "service", config: {} })),
-    ],
-    edges: backends.map((b) => ({ from: "lb", to: b })),
-  });
-  const services = new Map(backends.map((b) => [b, createService(b, serviceConfig(b))]));
-  const lb = createLoadBalancer({ strategy, backends });
-  const handlers = new Map<string, HandlerFn>([
-    [
-      "lb",
-      (event, ctx) => {
-        if (event.kind !== "request") return;
-        const target = lb.pick((id) => {
-          const svc = services.get(id);
-          const m = svc?.metrics();
-          return (m?.inflight ?? 0) + (m?.queueDepth ?? 0);
-        });
-        ctx.queue.push(event.at, "request", target, { arrival: event.at });
-      },
-    ],
-  ]);
-  for (const [id, svc] of services) handlers.set(id, svc.handler);
-  const result = run({ seed: SEED, graph, traffic: { rps, durationMs: 5000 }, handlers, sloP99Ms: SLO_P99_MS });
-  const p99 = result.verdicts.find((v) => v.id === "slo.p99")?.observed ?? 0;
-  const narration = [lb.narrate(), ...[...services.values()].map((s) => s.narrate())].join(" | ");
-  return { p99, narration };
+function formatRow(label: string, p99: number, verdict: "PASS" | "FAIL"): string {
+  return `${label} p99 ${Math.round(p99)}ms ${verdict}`;
 }
 
 export function ConceptLab({
   slug,
+  preset,
   challenges,
   recall,
 }: {
   slug: string;
+  preset: LabPreset;
   challenges: Challenge[];
   recall: RecallItem[];
 }): JSX.Element {
   const progress = useMemo(() => createProgress(browserStore()), []);
-  const [strategy, setStrategy] = useState<LbStrategy>("round-robin");
-  const [rps, setRps] = useState<number>(80);
+  const [values, setValues] = useState<PresetValues>(() => {
+    const init: PresetValues = {};
+    for (const control of preset.controls) {
+      init[control.id] = control.def;
+    }
+    return init;
+  });
   const [prediction, setPrediction] = useState<number>(150);
   const [committed, setCommitted] = useState<number | null>(null);
   const [chaosNote, setChaosNote] = useState<string>("No fault injected yet.");
@@ -120,14 +65,51 @@ export function ConceptLab({
   const [chaosCount, setChaosCount] = useState<number>(0);
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
 
-  const effectiveRps = chaosRps ?? rps;
-  const strategies: LbStrategy[] = ["round-robin", "least-connections"];
-  const rows: LabRow[] = strategies.map((s) => {
-    const { p99, narration } = runStrategy(s, effectiveRps, dropped);
-    return { strategy: s, p99, verdict: p99 <= SLO_P99_MS ? "PASS" : "FAIL", narration };
-  });
-  const current = rows.find((r) => r.strategy === strategy);
-  const actual = current?.p99 ?? 0;
+  // The first select control fans out into comparison rows; each row overrides
+  // that control's id with its option. Presets without a select get one row
+  // per topology variant (or a single base row).
+  const selectControl = preset.controls.find((control) => control.kind === "select");
+  const topos = preset.variants !== undefined && preset.variants.length > 0 ? preset.variants : [{ label: "base" }];
+  const strats: (string | undefined)[] = selectControl?.options ?? [undefined];
+
+  interface ExpandedRow extends LabRow {
+    strat: string | undefined;
+  }
+
+  const expanded: ExpandedRow[] = [];
+  for (const topo of topos) {
+    for (const strat of strats) {
+      const parts: string[] = [];
+      if (topo.label !== "base") parts.push(topo.label);
+      if (strat !== undefined) parts.push(strat);
+      const label = parts.join(" ") || "base";
+      const topology = topo.topology ?? preset.topology;
+      const rowValues: PresetValues = { ...values };
+      if (selectControl !== undefined && strat !== undefined) {
+        rowValues[selectControl.id] = strat;
+      }
+      if (chaosRps !== undefined) {
+        rowValues["rps"] = chaosRps;
+      }
+      const result = runPreset(
+        { ...preset, topology },
+        rowValues,
+        dropped === undefined ? undefined : { dropBackend: dropped },
+      );
+      expanded.push({ strategy: label, p99: result.p99, verdict: result.verdict, narration: result.narration, strat });
+    }
+  }
+  const rows: LabRow[] = expanded.map(({ strategy, p99, verdict, narration }) => ({ strategy, p99, verdict, narration }));
+  const first = expanded[0];
+  if (first === undefined) throw new Error(`preset '${preset.id}' produced no rows`);
+  const actualRow =
+    selectControl === undefined ? first : (expanded.find((row) => row.strat === values[selectControl.id]) ?? first);
+  const actual = actualRow.p99;
+
+  const rpsValue: unknown = chaosRps ?? values["rps"];
+  const effectiveRps = typeof rpsValue === "number" ? rpsValue : 0;
+  const descriptor =
+    selectControl === undefined ? actualRow.strategy : String(values[selectControl.id] ?? actualRow.strategy);
 
   function commitPrediction(): void {
     setCommitted(prediction);
@@ -138,10 +120,16 @@ export function ConceptLab({
 
   function injectChaos(): void {
     // Deterministic counter seed — never Date.now() (determinism discipline).
-    const fault = pickRandomFault(createRng(SEED + chaosCount * 101), ["fast", "slow"]);
+    // Backends come from the base topology's service nodes, never literals.
+    const backends = preset.topology.nodes.filter((node) => node.kind === "service").map((node) => node.id);
+    const fault = pickRandomFault(createRng(SEED + chaosCount * 101), backends);
     setChaosCount((c) => c + 1);
     if (fault.fault === "kill-node") {
-      const target = fault.targets?.[0] ?? "slow";
+      const target = fault.targets?.[0] ?? backends[0];
+      if (target === undefined) {
+        setChaosNote("Chaos: no backends to kill in this topology.");
+        return;
+      }
       setDropped(target);
       setChaosRps(undefined);
       setChaosNote(`Chaos: killed ${target}. Re-run shows the surviving backend alone.`);
@@ -153,53 +141,70 @@ export function ConceptLab({
     progress.completeStage(slug, "play");
   }
 
-  function onStrategyChange(value: string): void {
-    setStrategy(value === "least-connections" ? "least-connections" : "round-robin");
-  }
-
   function attemptChallenge(id: string): void {
     setDropped(undefined);
     setChaosRps(undefined);
     setChaosNote("No fault injected yet.");
-    if (id === "lb.1") {
-      setRps(80);
-      setStrategy("least-connections");
-    } else {
-      setRps(120);
+    const challenge = challenges.find((c) => c.id === id);
+    const patch = challenge?.apply?.set;
+    if (patch !== undefined) {
+      setValues((prev) => ({ ...prev, ...patch }));
     }
     progress.completeStage(slug, "stress");
   }
 
   function liveResult(id: string): string {
-    if (id === "lb.2") {
-      return rows.map((r) => `${r.strategy} p99 ${Math.round(r.p99)}ms ${r.verdict}`).join(" vs ");
-    }
-    const lc = rows.find((r) => r.strategy === "least-connections");
-    return lc ? `least-connections p99 ${Math.round(lc.p99)}ms ${lc.verdict}` : "no result yet";
+    const challenge = challenges.find((c) => c.id === id);
+    const shown = challenge?.show === undefined ? rows : rows.filter((row) => row.strategy === challenge.show);
+    if (shown.length === 0) return "no result yet";
+    return shown.map((row) => formatRow(row.strategy, row.p99, row.verdict)).join(" vs ");
   }
 
   return (
     <div>
       <section aria-label="Play">
         <h2>Play</h2>
-        <label>
-          Strategy
-          <select value={strategy} onChange={(e) => onStrategyChange(e.currentTarget.value)}>
-            <option value="round-robin">round-robin</option>
-            <option value="least-connections">least-connections</option>
-          </select>
-        </label>
-        <label>
-          Traffic (RPS): {rps}
-          <input type="range" min={10} max={300} value={rps} onChange={(e) => setRps(Number(e.currentTarget.value))} />
-        </label>
+        {preset.controls.map((control) =>
+          control.kind === "select" ? (
+            <label key={control.id}>
+              {control.label}
+              <select
+                value={String(values[control.id] ?? control.def)}
+                onChange={(e) => {
+                  const next = e.currentTarget.value;
+                  setValues((prev) => ({ ...prev, [control.id]: next }));
+                }}
+              >
+                {(control.options ?? []).map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : (
+            <label key={control.id}>
+              {control.label}: {String(values[control.id] ?? control.def)}
+              <input
+                type="range"
+                min={control.min ?? 0}
+                max={control.max ?? 100}
+                value={Number(values[control.id] ?? control.def)}
+                onChange={(e) => {
+                  const next = Number(e.currentTarget.value);
+                  setValues((prev) => ({ ...prev, [control.id]: next }));
+                }}
+              />
+            </label>
+          ),
+        )}
         <MetricTable rows={rows} />
       </section>
 
       <section aria-label="Predict then reveal">
         <h2>Predict, then reveal</h2>
         <label>
-          What will p99 be at {effectiveRps} RPS with {strategy}? {prediction}ms
+          What will p99 be at {effectiveRps} RPS with {descriptor}? {prediction}ms
           <input
             type="range"
             min={0}

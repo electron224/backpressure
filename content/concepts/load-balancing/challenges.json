@@ -1,4 +1,4 @@
 [
-  { "id": "lb.1", "text": "Keep p99 under 150ms at 80 RPS by switching strategy", "verdict": "slo.p99" },
-  { "id": "lb.2", "text": "Push to 120 RPS and report RR vs LC p99 divergence", "verdict": "slo.p99" }
+  { "id": "lb.1", "text": "Keep p99 under 150ms at 80 RPS by switching strategy", "verdict": "slo.p99", "apply": { "set": { "strategy": "least-connections", "rps": 80 } }, "show": "least-connections" },
+  { "id": "lb.2", "text": "Push to 120 RPS and report RR vs LC p99 divergence", "verdict": "slo.p99", "apply": { "set": { "rps": 120 } } }
 ]

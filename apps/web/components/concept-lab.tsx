@@ -157,6 +157,27 @@ export function ConceptLab({
     setStrategy(value === "least-connections" ? "least-connections" : "round-robin");
   }
 
+  function attemptChallenge(id: string): void {
+    setDropped(undefined);
+    setChaosRps(undefined);
+    setChaosNote("No fault injected yet.");
+    if (id === "lb.1") {
+      setRps(80);
+      setStrategy("least-connections");
+    } else {
+      setRps(120);
+    }
+    progress.completeStage(slug, "stress");
+  }
+
+  function liveResult(id: string): string {
+    if (id === "lb.2") {
+      return rows.map((r) => `${r.strategy} p99 ${Math.round(r.p99)}ms ${r.verdict}`).join(" vs ");
+    }
+    const lc = rows.find((r) => r.strategy === "least-connections");
+    return lc ? `least-connections p99 ${Math.round(lc.p99)}ms ${lc.verdict}` : "no result yet";
+  }
+
   return (
     <div>
       <section aria-label="Play">
@@ -216,7 +237,10 @@ export function ConceptLab({
         <ul>
           {challenges.map((c) => (
             <li key={c.id}>
-              {c.text} — verdict: {c.verdict}
+              {c.text} — verdict: {c.verdict} — live: {liveResult(c.id)}{" "}
+              <button type="button" onClick={() => attemptChallenge(c.id)}>
+                Attempt {c.id}
+              </button>
             </li>
           ))}
         </ul>

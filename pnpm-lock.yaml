@@ -30,6 +30,15 @@ importers:
         specifier: workspace:*
         version: link:../packages/sim-core
 
+  packages/concept-engine:
+    dependencies:
+      '@backpressure/sim-core':
+        specifier: workspace:*
+        version: link:../sim-core
+      zod:
+        specifier: 3.23.8
+        version: 3.23.8
+
   packages/sim-components:
     dependencies:
       '@backpressure/sim-core':
@@ -1158,3 +1167,7 @@ packages:
       siginfo: 2.0.0
       stackback: 0.0.2
     dev: true
+
+  /zod@3.23.8:
+    resolution: {integrity: sha512-XBx9AXhXktjUqnepgTiE5flcKIYWi/rme0Eaj+5Y0lftuGBq+jyRu/md4WnuxqgP1ubdpNCsYEYPxrzVHD8d6g==}
+    dev: false

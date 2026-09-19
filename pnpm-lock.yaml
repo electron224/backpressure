@@ -78,6 +78,9 @@ importers:
 
   packages/concept-engine:
     dependencies:
+      '@backpressure/sim-components':
+        specifier: workspace:*
+        version: link:../sim-components
       '@backpressure/sim-core':
         specifier: workspace:*
         version: link:../sim-core

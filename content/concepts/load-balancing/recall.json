@@ -1,0 +1,6 @@
+[
+  { "id": "lb-r1", "q": "Why does round-robin overload a heterogeneous fleet?", "a": "It deals equal share regardless of speed, so the slow server queues and p99 follows the slow path." },
+  { "id": "lb-r2", "q": "What signal does least-connections follow?", "a": "Fewest in-flight requests per backend, which adapts to slow or sick servers automatically." },
+  { "id": "lb-r3", "q": "When is round-robin safe?", "a": "When servers are identical in capacity and requests cost roughly the same." },
+  { "id": "lb-r4", "q": "What per-backend metric reveals the overload first?", "a": "Queue depth on the slow backend, before average latency moves much." }
+]

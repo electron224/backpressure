@@ -1,0 +1,22 @@
+# Load Balancing
+
+A load balancer sits in front of a fleet of servers and decides, per request, which server handles it. One address in, N servers out.
+
+## Why it exists
+
+Servers fail, deploy, and saturate. Without a balancer, clients pin to specific machines and inherit their fate. With one, capacity is pooled: add servers, survive failures, and upgrade without downtime.
+
+## The strategies
+
+- **Round-robin** deals requests evenly, one after another. No state, no measurement. Fair only when servers are identical.
+- **Least-connections** sends each request to the server with the fewest in-flight requests. Adapts to slow or sick servers automatically.
+- **Weighted** assigns fixed shares (e.g. 3:1) for fleets with known capacity differences.
+- **Consistent hashing** routes by key so the same key usually lands on the same server. Useful when servers cache.
+
+## The failure mode to remember
+
+Round-robin on a **heterogeneous** fleet — one fast server, one slow — gives both equal share. The slow server queues, latency follows the slow path, and p99 explodes while the fast server idles. Least-connections avoids this by following actual load.
+
+## Interview line
+
+"Use least-connections (or weighted) for heterogeneous fleets; round-robin only when servers are identical. Watch queue depth per backend, not just average latency."

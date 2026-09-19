@@ -1,0 +1,8 @@
+{
+  "id": "load-balancing",
+  "title": "Load Balancing",
+  "prerequisites": [],
+  "difficulty": "beginner",
+  "estimated_minutes": 20,
+  "tags": ["traffic", "tier-2"]
+}

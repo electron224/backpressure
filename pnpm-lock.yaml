@@ -21,6 +21,15 @@ importers:
         specifier: 2.1.8
         version: 2.1.8(@types/node@26.6.2)
 
+  demo:
+    dependencies:
+      '@backpressure/sim-components':
+        specifier: workspace:*
+        version: link:../packages/sim-components
+      '@backpressure/sim-core':
+        specifier: workspace:*
+        version: link:../packages/sim-core
+
   packages/sim-components:
     dependencies:
       '@backpressure/sim-core':

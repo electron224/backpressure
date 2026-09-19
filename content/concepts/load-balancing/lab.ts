@@ -37,6 +37,6 @@ export const labPreset = {
   metrics: ["p99", "throughput", "queueDepth"],
   challenges: [
     { id: "lb.1", text: "Keep p99 under 150ms at 80 RPS by switching strategy", verdict: "slo.p99" },
-    { id: "lb.2", text: "Survive one backend kill with p99 degradation < 2x", verdict: "slo.p99" },
+    { id: "lb.2", text: "Push to 120 RPS and report RR vs LC p99 divergence", verdict: "slo.p99" },
   ],
 };

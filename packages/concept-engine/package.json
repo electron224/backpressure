@@ -6,6 +6,7 @@
   "exports": { ".": "./src/index.ts" },
   "dependencies": {
     "@backpressure/sim-core": "workspace:*",
+    "@backpressure/sim-components": "workspace:*",
     "zod": "3.23.8"
   }
 }

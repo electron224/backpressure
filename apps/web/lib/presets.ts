@@ -4,8 +4,19 @@ import type { LabPreset } from "@backpressure/concept-engine";
 // Extensionless: matches the existing web import style (moduleResolution "node").
 import { labPreset as loadBalancing } from "../../../content/concepts/load-balancing/lab";
 import { labPreset as singlePointOfFailure } from "../../../content/concepts/single-point-of-failure/lab";
+import { labPreset as latencyAndThroughput } from "../../../content/concepts/latency-and-throughput/lab";
+import { labPreset as verticalVsHorizontalScaling } from "../../../content/concepts/vertical-vs-horizontal-scaling/lab";
+import { labPreset as statelessness } from "../../../content/concepts/statelessness/lab";
+import { labPreset as backOfEnvelopeEstimation } from "../../../content/concepts/back-of-envelope-estimation/lab";
 
-const presets: Record<string, unknown> = { "load-balancing": loadBalancing, "single-point-of-failure": singlePointOfFailure };
+const presets: Record<string, unknown> = {
+  "load-balancing": loadBalancing,
+  "single-point-of-failure": singlePointOfFailure,
+  "latency-and-throughput": latencyAndThroughput,
+  "vertical-vs-horizontal-scaling": verticalVsHorizontalScaling,
+  statelessness,
+  "back-of-envelope-estimation": backOfEnvelopeEstimation,
+};
 
 export function presetSlugs(): string[] {
   return Object.keys(presets);

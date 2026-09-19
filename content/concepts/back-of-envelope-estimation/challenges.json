@@ -1,0 +1,14 @@
+[
+  {
+    "id": "est.1",
+    "text": "Predict p99 at 100 RPS, then reveal — expect it well under the 150ms SLO",
+    "verdict": "slo.p99",
+    "apply": { "set": { "rps": 100 } }
+  },
+  {
+    "id": "est.2",
+    "text": "Predict p99 at 240 RPS (near the 250 RPS capacity), then reveal",
+    "verdict": "slo.p99",
+    "apply": { "set": { "rps": 240 } }
+  }
+]

@@ -1,0 +1,17 @@
+# Latency and Throughput
+
+Latency is how long one request takes; throughput is how many finish per second. They look independent until the server runs out of room — then latency explodes while throughput refuses to grow.
+
+## Capacity is arithmetic
+
+This server handles 2 requests at once, each taking 50ms: 2 / 0.05s = 40 RPS maximum. The default 80 RPS is deliberately past capacity — the row opens red, and the narration shows dropped requests piling up.
+
+## The cliff
+
+Drag RPS from 10 upward. Throughput climbs, then flatlines — the server cannot finish work faster than its capacity, and the narration's dropped count climbs above zero. p99 stays comfortably under the SLO, then bends upward steeply as arrivals queue behind the two in-flight requests. Past capacity, extra RPS buys queue and drops, not completions.
+
+The service-time slider moves the cliff: shorten service time toward 20ms and the same 80 RPS drops back under capacity — the row flips green without adding a single server. Latency is not a property of code alone; it is code times load.
+
+## The challenge
+
+Find the exact RPS where p99 first crosses 150ms. Then break a passing setup with chaos: a traffic spike turns green red in one click.

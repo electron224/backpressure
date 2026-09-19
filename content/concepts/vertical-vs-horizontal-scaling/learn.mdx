@@ -1,0 +1,15 @@
+# Vertical vs Horizontal Scaling
+
+Scale up (vertical) means a bigger box: one server with concurrency 8. Scale out (horizontal) means more boxes: a balancer over four small servers. Both sides hold 320 RPS of total capacity — 8 / 0.025s for the fat box, four times 2 / 0.025s for the wide side.
+
+## Same capacity, same numbers
+
+At 200 RPS both rows pass with room to spare — and their p99s match. Under even load with ample headroom, the shape of the fleet does not matter. Only capacity and load decide.
+
+## Push to 300
+
+At 300 RPS both rows degrade together: p99 climbs steeply on each while verdicts still hold. The lesson is deliberately boring — no shape wins under even load. The differences appear elsewhere: faults and growth.
+
+## Where shape decides
+
+Kill a backend on the wide side and the three survivors absorb the load; the fat box has no second server to lose — kill it and every request fails. Growth favors the wide side too: adding a fifth thin server is routine, while the fat box eventually hits a size that cannot get bigger. Cost and failure modes decide, not raw capacity.

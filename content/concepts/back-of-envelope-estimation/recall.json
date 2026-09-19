@@ -1,0 +1,5 @@
+[
+  { "id": "est-r1", "q": "Convert 10M DAU × 10 requests/day to average RPS.", "a": "100M ÷ 86,400 ≈ 1157 RPS average; plan peaks at 2–3×, so roughly 2300–3500 RPS." },
+  { "id": "est-r2", "q": "What is this lab server's capacity?", "a": "About 250 RPS: 5 concurrent ÷ 0.02s service time. 100 RPS idles well under the SLO; 240 RPS crosses it." },
+  { "id": "est-r3", "q": "Why estimate before running?", "a": "The committed prediction turns a vague number into a checkable claim — the error between predicted and actual p99 is what trains queueing intuition." }
+]

@@ -1,0 +1,5 @@
+[
+  { "id": "lat-r1", "q": "What is this server's max throughput, and how is it computed?", "a": "About 40 RPS: concurrency ÷ service time = 2 ÷ 0.05s. Past that, extra arrivals queue instead of completing faster." },
+  { "id": "lat-r2", "q": "What happens to p99 when RPS exceeds capacity?", "a": "It climbs steeply while throughput flatlines — every extra request buys queueing delay, not completions. The verdict flips red past the cliff." },
+  { "id": "lat-r3", "q": "What does lowering service time buy at fixed traffic?", "a": "Capacity: halving serviceMs doubles the RPS ceiling, so the same load drops from red back to green without adding servers." }
+]

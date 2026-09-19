@@ -1,0 +1,6 @@
+[
+  { "id": "scale-r1", "q": "What is the difference between scaling up and scaling out?", "a": "Up = a bigger box (more concurrency in one server); out = more boxes (a balancer spreading load across small servers)." },
+  { "id": "scale-r2", "q": "Why do both rows pass at 200 RPS?", "a": "Both sides have 320 RPS of capacity against 200 of load — headroom decides pass/fail, not the shape of the fleet." },
+  { "id": "scale-r3", "q": "What happens on both rows when you push to 300 RPS?", "a": "Both degrade together — p99 climbs steeply on each while verdicts still hold. Under even load, capacity is capacity; the shapes diverge under faults, not load." },
+  { "id": "scale-r4", "q": "When would you pick scale-out despite the extra moving part?", "a": "When one box cannot grow further, or when a dead backend must not take the system down — kill one thin server and three keep serving." }
+]

@@ -1,0 +1,15 @@
+# Back-of-Envelope Estimation
+
+Interviewers ask "design X for 10M users" and expect arithmetic, not awe. Convert users to requests per second first — everything else (servers, bandwidth, storage) hangs off that number.
+
+## The DAU to RPS recipe
+
+10M daily users times 10 requests each is 100M requests per day. Divide by 86,400 seconds: about 1157 RPS average. Real traffic peaks, so plan for 2–3 times the average: roughly 2300–3500 RPS at peak.
+
+## Check against capacity
+
+This lab's server does 5 concurrent at 20ms each: 5 / 0.02s = 250 RPS. At 100 RPS it idles — commit a p99 prediction, then reveal. At 240 RPS it crosses the 150ms SLO. Now divide: the 1157 average needs five such boxes; the peak needs ten to fourteen. Demand divided by per-box capacity, rounded up with headroom — that division is the whole skill.
+
+## The challenge habit
+
+Estimate before running: commit a p99 prediction at 100 and at 240. The gap between your two predictions is your queueing intuition. Wrong predictions are the point — log them and watch the error shrink.

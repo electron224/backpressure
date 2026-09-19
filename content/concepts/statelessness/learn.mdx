@@ -1,0 +1,15 @@
+# Statelessness
+
+Sticky routing pins every request to the first backend. Least-connections spreads requests to whichever backend is freest. Both rows pass at 80 RPS — but the narrations tell different stories: sticky serves all 400 requests on srv-a while srv-b sits idle; least-connections splits the load across both.
+
+## Idle capacity is the tax
+
+A sticky fleet of two behaves like a fleet of one. Push past a single backend's 100 RPS and sticky goes red — drops begin — while least-connections, using both backends, stays green. The second server exists; sticky just refuses to use it.
+
+## Kill changes nothing (at 80)
+
+Kill a backend at 80 RPS and both rows stay green: one twin alone handles 80. Replication buys survival either way. Stateless routing buys the full fleet — survival plus capacity.
+
+## The interview smell
+
+Sticky sessions usually mean state lives on the server, forcing the balancer to pin each client to the machine holding its state. Ask what happens when that server dies, or when one client is hotter than the rest. Prefer stateless servers behind a least-connections balancer, with session state in a shared store.

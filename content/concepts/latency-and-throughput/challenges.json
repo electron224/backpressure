@@ -1,0 +1,3 @@
+[
+  { "id": "lat.1", "text": "Find the RPS where p99 first exceeds 150ms", "verdict": "slo.p99", "apply": { "set": { "rps": 40 } } }
+]

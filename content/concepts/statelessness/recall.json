@@ -1,0 +1,5 @@
+[
+  { "id": "sls-r1", "q": "What does sticky routing do to a two-backend fleet?", "a": "It pins every request to the first backend — the narration shows srv-a serving all 400 requests while srv-b serves zero." },
+  { "id": "sls-r2", "q": "Why does sticky fail at 120 RPS while least-connections passes?", "a": "One backend holds 100 RPS, so sticky's pinned load saturates it and drops begin; least-connections spreads roughly half each and stays green. Sticky wastes half the fleet." },
+  { "id": "sls-r3", "q": "What usually forces sticky routing in real systems?", "a": "Session state kept on the server — the balancer must pin each client to the machine holding its state. Prefer stateless servers with shared session storage." }
+]

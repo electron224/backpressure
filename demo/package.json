@@ -1,0 +1,9 @@
+{
+  "name": "demo",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@backpressure/sim-components": "workspace:*",
+    "@backpressure/sim-core": "workspace:*"
+  }
+}

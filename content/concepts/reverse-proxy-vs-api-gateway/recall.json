@@ -1,0 +1,6 @@
+[
+  { "id": "gw-r1", "q": "What does a reverse proxy do that direct traffic does not?", "a": "Single address, shielding origins, pooling capacity so servers can fail, deploy, and scale behind it." },
+  { "id": "gw-r2", "q": "What turns a proxy into a gateway?", "a": "Cross-cutting policy in one place: auth, rate limits, routing, and transformation instead of reimplementing them per service." },
+  { "id": "gw-r3", "q": "What does the gateway cost you?", "a": "A choke point: it needs its own capacity planning, and killing it is a total outage, unlike killing one twin." },
+  { "id": "gw-r4", "q": "At 250 RPS, why does the gateway variant stay clean while proxy saturates?", "a": "The gateway limiter sheds to 120 before the twins, so each twin stays under its 100 RPS capacity while proxy twins take 125 each." }
+]

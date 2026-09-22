@@ -1,0 +1,4 @@
+[
+  { "id": "gw.1", "text": "Push 250 RPS: proxy saturates, gateway sheds and services stay clean", "verdict": "slo.p99", "apply": { "set": { "rps": 250 } }, "show": "gateway" },
+  { "id": "gw.2", "text": "Kill the gateway limiter and compare with killing one twin", "verdict": "slo.p99", "apply": { "set": { "rps": 80 } } }
+]

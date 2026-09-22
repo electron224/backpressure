@@ -1,0 +1,20 @@
+# Reverse Proxy vs API Gateway
+
+A reverse proxy is a front door: one address that forwards to a pool of servers. An API gateway is a front door with policy: auth, rate limits, routing, and transformation in one place.
+
+## Why the distinction matters
+
+Every service reimplementing auth and limits is drift waiting to happen. Centralizing cross-cutting concerns in the gateway keeps services focused — at the price of a choke point you must now capacity-plan like any other component.
+
+## The two shapes
+
+- **Proxy** spreads load across twins. Simple, no policy. Failure is local: lose a twin, the other absorbs.
+- **Gateway** puts a limiter ahead of the same pool. Policy in one place, plus protection: at 250 RPS the limiter sheds to 120 while proxy twins take 125 each against a 100 RPS capacity and saturate.
+
+## The failure mode to remember
+
+Kill the gateway limiter and everything fails — total outage. Kill one twin and the pool degrades. Centralization concentrates both power and risk; plan gateway capacity and replicas accordingly.
+
+## Interview line
+
+"Proxy for pooling, gateway for policy. Every central chokepoint needs its own capacity math and a story for when it dies."

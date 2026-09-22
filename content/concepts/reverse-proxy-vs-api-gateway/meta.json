@@ -1,0 +1,8 @@
+{
+  "id": "reverse-proxy-vs-api-gateway",
+  "title": "Reverse Proxy vs API Gateway",
+  "prerequisites": ["load-balancing", "rate-limiting"],
+  "difficulty": "intermediate",
+  "estimated_minutes": 15,
+  "tags": ["traffic", "tier-2"]
+}

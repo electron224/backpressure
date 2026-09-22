@@ -20,7 +20,7 @@ Leaky-bucket code path (Learn prose mirror), per-key limiting (needs engine key 
 
 ## Preset (client → limiter → service 20ms/c4)
 Default limit 100/burst 20, traffic slider 20–300 def 80. At 80 token-bucket ~zero rejects; at 150 sustained 429s with service drops at 0. Algorithm select flips shaping; chaos traffic-spike across a window edge demonstrates the ~2× admit on sliding-window.
-Challenges: `rl.1` hold 150 RPS with zero service drops (verdict throughput/errors-based); `rl.2` boundary-burst demo.
+Challenges: `rl.1` hold 150 RPS with zero service drops (verdict slo.p99 PASS behind the limiter); `rl.2` raise burst 20→100 at 150 RPS and watch rejected fall (burst-tolerance, pinned in-test). The sliding-window boundary burst is Learn math + a handler-level unit pin (100 admits at t=999 and 100 at t=1000); a UI-driven adversarial burst needs scripted arrival patterns the engine lacks — recorded follow-up, not lab fiction.
 
 ## Interpreter + schema (only infra)
 - `TopologyNodeSchema` kind += `"rate-limiter"`.

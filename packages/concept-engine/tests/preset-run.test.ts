@@ -71,3 +71,85 @@ describe("runPreset LB parity (seed 7, 80 RPS)", () => {
     expect(after.narration).toContain("all backends down");
   });
 });
+
+const limiterChain = {
+  id: "rl",
+  topology: {
+    nodes: [
+      { id: "lim", kind: "rate-limiter", config: { algorithm: "token-bucket", rps: 100, burst: 20 } },
+      { id: "api", kind: "service", config: { serviceMs: 20, concurrency: 4, queueLimit: 50 } },
+    ],
+    edges: [{ from: "lim", to: "api" }],
+  },
+  controls: [],
+  metrics: ["p99"],
+  challenges: [{ id: "r1", text: "Hold", verdict: "slo.p99" }],
+} as const;
+
+describe("rate-limiter chain (limiter -> service, no lb)", () => {
+  it("sheds at 150 RPS with service drops at 0", () => {
+    const preset = LabPresetSchema.parse(limiterChain);
+    const result = runPreset(preset, { rps: 150 });
+    expect(result.rejected).toBeGreaterThan(0);
+    expect(result.narration).toContain("dropped=0");
+  });
+
+  it("admits everything at 80 RPS", () => {
+    const preset = LabPresetSchema.parse(limiterChain);
+    const result = runPreset(preset, { rps: 80 });
+    expect(result.rejected).toBe(0);
+  });
+
+  it("kill on limiter fails all-down, not crash", () => {
+    const preset = LabPresetSchema.parse(limiterChain);
+    const result = runPreset(preset, { rps: 80 }, { dropBackend: "lim" });
+    expect(result.verdict).toBe("FAIL");
+    expect(result.narration).toContain("all backends down");
+  });
+
+  it("unknown algorithm throws", () => {
+    const bad = LabPresetSchema.parse({
+      ...limiterChain,
+      topology: {
+        nodes: [
+          { id: "lim", kind: "rate-limiter", config: { algorithm: "magic", rps: 100, burst: 20 } },
+          { id: "api", kind: "service", config: { serviceMs: 20, concurrency: 4, queueLimit: 50 } },
+        ],
+        edges: [{ from: "lim", to: "api" }],
+      },
+    });
+    expect(() => runPreset(bad, { rps: 80 })).toThrow(/unknown algorithm/i);
+  });
+
+  it("multiple downstream targets throw", () => {
+    const forked = LabPresetSchema.parse({
+      ...limiterChain,
+      topology: {
+        nodes: [
+          { id: "lim", kind: "rate-limiter", config: { algorithm: "token-bucket", rps: 100, burst: 20 } },
+          { id: "a", kind: "service", config: {} },
+          { id: "b", kind: "service", config: {} },
+        ],
+        edges: [
+          { from: "lim", to: "a" },
+          { from: "lim", to: "b" },
+        ],
+      },
+    });
+    expect(() => runPreset(forked, { rps: 80 })).toThrow(/exactly 1 downstream/i);
+  });
+
+  it("multiple entry nodes throw", () => {
+    const multi = LabPresetSchema.parse({
+      ...limiterChain,
+      topology: {
+        nodes: [
+          { id: "a", kind: "service", config: {} },
+          { id: "b", kind: "service", config: {} },
+        ],
+        edges: [],
+      },
+    });
+    expect(() => runPreset(multi, { rps: 80 })).toThrow(/exactly 1 entry/i);
+  });
+});

@@ -1,7 +1,7 @@
 // packages/concept-engine/src/preset-run.ts
 import { compile, run } from "@backpressure/sim-core";
 import type { HandlerFn } from "@backpressure/sim-core";
-import { createLoadBalancer, createService } from "@backpressure/sim-components";
+import { createLoadBalancer, createRateLimiter, createService } from "@backpressure/sim-components";
 import type { LabPreset, PresetValues, Topology } from "./schema.js";
 
 export const DEFAULT_SEED = 7;
@@ -12,6 +12,7 @@ export interface PresetRunResult {
   p99: number;
   verdict: "PASS" | "FAIL";
   narration: string;
+  rejected: number;
 }
 
 export interface PresetRunOpts {
@@ -54,6 +55,31 @@ function resolvedServiceConfig(
   };
 }
 
+function resolvedLimiterConfig(
+  topology: Topology,
+  id: string,
+  values: PresetValues,
+  presetId: string,
+): { algorithm: "token-bucket" | "sliding-window"; rps: number; burst: number } {
+  const node = topology.nodes.find((n) => n.id === id);
+  if (node === undefined) throw new Error(`preset '${presetId}': unknown node '${id}'`);
+  const base: Record<string, unknown> = isRecord(node.config) ? { ...node.config } : {};
+  const algoRaw: unknown = values["algorithm"] ?? base["algorithm"];
+  if (algoRaw !== "token-bucket" && algoRaw !== "sliding-window") {
+    throw new Error(`preset '${presetId}': unknown algorithm '${String(algoRaw)}'`);
+  }
+  const merged: Record<string, unknown> = { ...base };
+  for (const [key, value] of Object.entries(values)) {
+    const dot = key.indexOf(".");
+    if (dot === -1 || key.slice(0, dot) !== id) continue;
+    if (typeof value !== "number" || !Number.isFinite(value)) {
+      throw new Error(`preset '${presetId}': override '${key}' must be a finite number`);
+    }
+    merged[key.slice(dot + 1)] = value;
+  }
+  return { algorithm: algoRaw, rps: numberField(merged, "rps", 100), burst: numberField(merged, "burst", 20) };
+}
+
 export function runPreset(preset: LabPreset, values: PresetValues, opts?: PresetRunOpts): PresetRunResult {
   const seed = opts?.seed ?? DEFAULT_SEED;
   const durationMs = opts?.durationMs ?? DEFAULT_DURATION_MS;
@@ -62,6 +88,22 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
 
   const lbNode = topology.nodes.find((n) => n.kind === "lb");
   const serviceIds = topology.nodes.filter((n) => n.kind === "service").map((n) => n.id);
+  const limiterNodes = topology.nodes.filter((n) => n.kind === "rate-limiter");
+  const roots = topology.nodes.filter((n) => !topology.edges.some((e) => e.to === n.id));
+  if (roots.length !== 1) {
+    throw new Error(`preset '${preset.id}': expected exactly 1 entry node, found ${roots.length}`);
+  }
+  if (opts?.dropBackend !== undefined && limiterNodes.some((n) => n.id === opts.dropBackend)) {
+    return { p99: 0, verdict: "FAIL", narration: `${preset.id}: all backends down — every request fails`, rejected: 0 };
+  }
+  const limiterTargets = new Map<string, string>();
+  for (const limiter of limiterNodes) {
+    const targets = topology.edges.filter((e) => e.from === limiter.id).map((e) => e.to);
+    if (targets.length !== 1 || targets[0] === undefined) {
+      throw new Error(`rate-limiter '${limiter.id}': needs exactly 1 downstream target`);
+    }
+    limiterTargets.set(limiter.id, targets[0]);
+  }
   let backends = lbNode
     ? topology.edges.filter((e) => e.from === lbNode.id).map((e) => e.to)
     : [...serviceIds];
@@ -69,7 +111,7 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
     backends = backends.filter((b) => b !== opts.dropBackend);
   }
   if (backends.length === 0) {
-    return { p99: 0, verdict: "FAIL", narration: `${preset.id}: all backends down — every request fails` };
+    return { p99: 0, verdict: "FAIL", narration: `${preset.id}: all backends down — every request fails`, rejected: 0 };
   }
   if (!lbNode && backends.length > 1) {
     throw new Error(`preset '${preset.id}': multiple services without an lb node are unsupported`);
@@ -83,12 +125,23 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
   const graph = compile({
     nodes: [
       ...(lbNode ? [{ id: lbNode.id, kind: "lb", config: {} }] : []),
+      ...limiterNodes.map((n) => ({ id: n.id, kind: "rate-limiter", config: {} })),
       ...backends.map((b) => ({ id: b, kind: "service", config: {} })),
     ],
-    edges: lbNode ? backends.map((b) => ({ from: lbNode.id, to: b })) : [],
+    edges: [
+      ...[...limiterTargets.entries()].map(([from, to]) => ({ from, to })),
+      ...(lbNode ? backends.map((b) => ({ from: lbNode.id, to: b })) : []),
+    ],
   });
   const services = new Map(
     backends.map((b) => [b, createService(b, resolvedServiceConfig(topology, b, values, preset.id))]),
+  );
+  const limiters = new Map(
+    limiterNodes.map((n) => {
+      const downstream = limiterTargets.get(n.id);
+      if (downstream === undefined) throw new Error(`rate-limiter '${n.id}': missing downstream`);
+      return [n.id, createRateLimiter(n.id, resolvedLimiterConfig(topology, n.id, values, preset.id), downstream)];
+    }),
   );
 
   // No strategy control on presets like SPOF (lb node, no strategy value):
@@ -122,11 +175,17 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
     }
   }
   for (const [id, svc] of services) handlers.set(id, svc.handler);
+  for (const [id, lim] of limiters) handlers.set(id, lim.handler);
 
   const result = run({ seed, graph, traffic: { rps: rpsRaw, durationMs }, handlers, sloP99Ms: slo });
   const p99 = result.verdicts.find((v) => v.id === "slo.p99")?.observed ?? 0;
   const passed = result.verdicts.some((v) => v.id === "slo.p99" && v.passed);
+  const rejected = result.metrics.reduce((sum, point) => sum + point.errors, 0);
   const origin = lbNode ? `lb: backends=[${backends.join(",")}]` : "direct";
-  const narration = [origin, ...[...services.values()].map((s) => s.narrate())].join(" | ");
-  return { p99, verdict: passed ? "PASS" : "FAIL", narration };
+  const narration = [
+    origin,
+    ...[...limiters.values()].map((l) => l.narrate()),
+    ...[...services.values()].map((s) => s.narrate()),
+  ].join(" | ");
+  return { p99, verdict: passed ? "PASS" : "FAIL", narration, rejected };
 }

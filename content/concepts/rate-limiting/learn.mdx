@@ -1,0 +1,21 @@
+# Rate Limiting
+
+A rate limiter sits in front of a service and decides, per request, whether it may pass. Over the limit, requests get a fast 429 instead of a slow timeout.
+
+## Why it exists
+
+An unprotected service under overload queues until p99 explodes and everything times out together. A limiter sheds excess load early: the service stays fast for admitted requests, and callers get a clear retryable signal instead of silence.
+
+## The algorithms
+
+- **Token bucket** refills continuously up to a burst capacity. Short bursts pass; sustained overload sheds smoothly. The burst size is how much sudden spike you forgive. (The lab's burst slider only affects token bucket; sliding-window ignores it.)
+- **Sliding window** counts requests in fixed windows. Simple, but a burst at the end of one window plus a burst at the start of the next admits nearly twice the limit across the edge — the boundary burst. With a 100 RPS window, 100 requests at :999 and 100 at :1000 all pass.
+- **Leaky bucket** is token bucket's mirror: requests queue and drain at a fixed rate. Smooth outflow instead of bursty inflow. Same math family, different shape.
+
+## The failure mode to remember
+
+Watch 429s, not latency. A healthy limiter shows high rejects with a clean service behind it. No rejects under overload means the limiter is misconfigured or missing — the queue is absorbing what should have been shed.
+
+## Interview line
+
+"Limit per key for fairness, global for protection. Put the limiter ahead of the expensive work, keep the 429 path cheap, and size burst from real spike data, not guesses."

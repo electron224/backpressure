@@ -8,6 +8,7 @@ import { labPreset as latencyAndThroughput } from "../../../content/concepts/lat
 import { labPreset as verticalVsHorizontalScaling } from "../../../content/concepts/vertical-vs-horizontal-scaling/lab";
 import { labPreset as statelessness } from "../../../content/concepts/statelessness/lab";
 import { labPreset as backOfEnvelopeEstimation } from "../../../content/concepts/back-of-envelope-estimation/lab";
+import { labPreset as rateLimiting } from "../../../content/concepts/rate-limiting/lab";
 
 const presets: Record<string, unknown> = {
   "load-balancing": loadBalancing,
@@ -16,6 +17,7 @@ const presets: Record<string, unknown> = {
   "vertical-vs-horizontal-scaling": verticalVsHorizontalScaling,
   statelessness,
   "back-of-envelope-estimation": backOfEnvelopeEstimation,
+  "rate-limiting": rateLimiting,
 };
 
 export function presetSlugs(): string[] {

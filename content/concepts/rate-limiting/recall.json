@@ -1,0 +1,6 @@
+[
+  { "id": "rl-r1", "q": "Why return 429 instead of queueing excess requests?", "a": "Queueing explodes p99 for everyone; a fast 429 keeps admitted requests fast and tells callers to retry." },
+  { "id": "rl-r2", "q": "What is the sliding-window boundary burst?", "a": "A burst at the end of one window plus a burst at the start of the next both pass, admitting nearly twice the limit across the edge." },
+  { "id": "rl-r3", "q": "What does the burst size control in a token bucket?", "a": "How much sudden spike is forgiven before shedding starts; sustained overload always sheds to the refill rate." },
+  { "id": "rl-r4", "q": "When do you limit per key versus globally?", "a": "Per key for fairness between callers; globally to protect the origin from total overload." }
+]

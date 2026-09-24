@@ -1,0 +1,15 @@
+# Quorums and N-R-W
+
+With N replicas, every write waits for W acks and every read asks R replicas. Tune W and R and you tune the system: latency against staleness with one inequality, W + R > N.
+
+## What the quorums show
+
+Three replicas lagging 100, 500, 2000ms. Write concern one answers in ~120ms, majority in ~520, all in ~2020 — each tier waits on a slower replica. Reads spread across replicas go stale exactly when they land on one the write hasn't reached.
+
+## The failure mode to remember
+
+W + R ≤ N reads like an optimization until a slow replica serves the past as the present. Quorums don't remove the trade; they price it per operation instead of per system.
+
+## Interview line
+
+"W + R > N for overlap, then spend it: bigger W for write safety, bigger R for read freshness. Name the ack you wait for."

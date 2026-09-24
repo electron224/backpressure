@@ -1,0 +1,5 @@
+[
+  { "id": "q-r1", "q": "What does W + R > N buy?", "a": "Overlap: every read quorum intersects every write quorum, so reads can find the latest write." },
+  { "id": "q-r2", "q": "Why does write latency step with the concern?", "a": "Each tier waits on a slower replica: one answers at the fastest lag, all at the slowest." },
+  { "id": "q-r3", "q": "When do reads go stale under quorums?", "a": "When they land on a replica the write hasn't reached — spread reads over lagged replicas and watch." }
+]

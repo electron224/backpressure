@@ -1,0 +1,8 @@
+{
+  "id": "quorums-and-n-r-w",
+  "title": "Quorums and N-R-W",
+  "prerequisites": ["replication"],
+  "difficulty": "advanced",
+  "estimated_minutes": 20,
+  "tags": ["theory", "tier-4"]
+}

@@ -1,0 +1,6 @@
+[
+  { "id": "ev-r1", "q": "Why does LRU beat FIFO under skewed traffic?", "a": "Hits refresh recency so the hot working set sticks, while FIFO evicts hot keys as readily as scan keys." },
+  { "id": "ev-r2", "q": "What does LFU protect against that LRU does not?", "a": "Scans: single-touch keys never build frequency, so they cannot dislodge hot entries." },
+  { "id": "ev-r3", "q": "When do all policies perform equally?", "a": "Under uniform demand every key is equally cold, so capacity churns the same for fifo, lru, and lfu." },
+  { "id": "ev-r4", "q": "What should you ask before picking a policy?", "a": "The key distribution: skew rewards recency/frequency tracking, uniformity rewards capacity." }
+]

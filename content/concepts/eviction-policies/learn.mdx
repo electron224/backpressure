@@ -1,0 +1,21 @@
+# Eviction Policies
+
+A full cache must drop something. The eviction policy decides what goes — and under skewed traffic, that decision is most of your hit ratio.
+
+## The three answers
+
+- **FIFO** drops the oldest entry. No tracking, no memory of value. Scans flush hot keys as readily as cold ones.
+- **LRU** drops the least recently used. A hit refreshes recency, so working sets stick while one-off scans pass through.
+- **LFU** drops the least frequently used. Hot keys accumulate armor; a scan of single-touches can't dislodge them.
+
+## When it matters
+
+Under skewed demand (a few keys taking most traffic), frequency and recency tracking beat blind age: LFU pulls clearly ahead, LRU edges FIFO out, and scans widen the gap further. Under uniform demand nothing helps: every key is equally cold, capacity churns for all policies alike. Skew is the difference between a policy and a prayer.
+
+## The failure mode to remember
+
+Scans: a bulk job sweeping cold keys through a small hot cache. FIFO evicts the working set; LRU survives if the scan fits around recency; LFU barely notices. Size for the working set, not the key space.
+
+## Interview line
+
+"Skewed workload: LRU for recency, LFU for frequency, ARC when both matter. Uniform workload: buy capacity. Always ask for the key distribution before picking."

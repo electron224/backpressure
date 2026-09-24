@@ -13,6 +13,7 @@ import { labPreset as reverseProxyVsApiGateway } from "../../../content/concepts
 import { labPreset as cdn } from "../../../content/concepts/cdn/lab";
 import { labPreset as healthChecksAndCircuitBreakers } from "../../../content/concepts/health-checks-and-circuit-breakers/lab";
 import { labPreset as cachingStrategies } from "../../../content/concepts/caching-strategies/lab";
+import { labPreset as evictionPolicies } from "../../../content/concepts/eviction-policies/lab";
 
 const presets: Record<string, unknown> = {
   "load-balancing": loadBalancing,
@@ -26,6 +27,7 @@ const presets: Record<string, unknown> = {
   cdn,
   "health-checks-and-circuit-breakers": healthChecksAndCircuitBreakers,
   "caching-strategies": cachingStrategies,
+  "eviction-policies": evictionPolicies,
 };
 
 export function presetSlugs(): string[] {

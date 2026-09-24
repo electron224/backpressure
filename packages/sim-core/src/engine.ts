@@ -72,6 +72,34 @@ interface Completion {
   ok: boolean;
 }
 
+// Inverse-CDF zipf sampler over ranks 0..space-1. The table is built once
+// per run; sampling consumes exactly one RNG draw per arrival.
+function buildZipfTable(space: number, alpha: number): number[] {
+  if (!Number.isInteger(space) || space <= 0) throw new Error(`zipf keySpace must be a positive integer, got ${space}`);
+  if (!(alpha >= 0)) throw new Error(`zipf alpha must be >= 0, got ${alpha}`);
+  const table: number[] = new Array<number>(space);
+  let cumulative = 0;
+  for (let rank = 1; rank <= space; rank += 1) {
+    cumulative += 1 / Math.pow(rank, alpha);
+    table[rank - 1] = cumulative;
+  }
+  const total = table[space - 1] ?? 1;
+  for (let i = 0; i < space; i += 1) table[i] = (table[i] ?? 0) / total;
+  return table;
+}
+
+function sampleZipf(rng: { next: () => number }, table: number[]): number {
+  const u = rng.next();
+  let lo = 0;
+  let hi = table.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if ((table[mid] ?? 1) < u) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo;
+}
+
 export function run(opts: RunOpts): RunResult {
   const rng = createRng(opts.seed);
   const queue = new EventQueue();
@@ -94,6 +122,7 @@ export function run(opts: RunOpts): RunResult {
   const arrivals = Math.max(0, Math.floor((opts.traffic.rps * opts.traffic.durationMs) / 1000));
   const meanGap = opts.traffic.rps > 0 ? 1000 / opts.traffic.rps : opts.traffic.durationMs;
   let at = 0;
+  let zipfTable: number[] | null = null;
   const roots = opts.graph.order.filter((id) => {
     for (const list of opts.graph.downstream.values()) {
       if (list.includes(id)) return false;
@@ -108,7 +137,18 @@ export function run(opts: RunOpts): RunResult {
     // so legacy presets stay byte-identical.
     const ratio = opts.traffic.writeRatio ?? 0;
     const kind = ratio > 0 && rng.next() < ratio ? "write" : "request";
-    if (entry !== undefined) queue.push(at, kind, entry, { id: i });
+    // Keyed arrivals are opt-in: without keyAlpha/keySpace the payload
+    // stays { id } and legacy logs are untouched.
+    const alpha = opts.traffic.keyAlpha;
+    const space = opts.traffic.keySpace;
+    if (entry !== undefined) {
+      if (alpha !== undefined && space !== undefined) {
+        if (zipfTable === null) zipfTable = buildZipfTable(space, alpha);
+        queue.push(at, kind, entry, { id: i, key: sampleZipf(rng, zipfTable) });
+      } else {
+        queue.push(at, kind, entry, { id: i });
+      }
+    }
   }
 
   const endAt = opts.traffic.durationMs;

@@ -25,6 +25,7 @@ export interface TrafficProfile {
   rps: number;
   durationMs: number;
   keyAlpha?: number;
+  keySpace?: number;
   writeRatio?: number;
 }
 

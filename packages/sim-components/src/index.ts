@@ -8,3 +8,5 @@ export { createRateLimiter } from "./rate-limiter.js";
 export type { LimiterAlgorithm, RateLimiterOpts } from "./rate-limiter.js";
 export { createCache } from "./cache.js";
 export type { CacheOpts, WritePolicy } from "./cache.js";
+export { createDatabase } from "./database.js";
+export type { DatabaseOpts, ReplicationMode } from "./database.js";

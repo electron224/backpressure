@@ -1,0 +1,4 @@
+[
+  { "id": "cdn.1", "text": "Push 220 RPS: direct origin collapses, cached edge holds", "verdict": "slo.p99", "apply": { "set": { "rps": 220 } }, "show": "edge" },
+  { "id": "cdn.2", "text": "Drop TTL to 1s over 10k keys at 220 RPS and watch the shield collapse", "verdict": "slo.p99", "apply": { "set": { "rps": 220, "edge.ttlMs": 1000, "edge.keySpace": 10000 } }, "show": "edge" }
+]

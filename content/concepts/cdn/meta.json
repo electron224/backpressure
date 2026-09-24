@@ -1,0 +1,8 @@
+{
+  "id": "cdn",
+  "title": "CDN and Edge Caching",
+  "prerequisites": ["load-balancing"],
+  "difficulty": "intermediate",
+  "estimated_minutes": 20,
+  "tags": ["traffic", "tier-2"]
+}

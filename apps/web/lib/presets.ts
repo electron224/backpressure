@@ -10,6 +10,7 @@ import { labPreset as statelessness } from "../../../content/concepts/statelessn
 import { labPreset as backOfEnvelopeEstimation } from "../../../content/concepts/back-of-envelope-estimation/lab";
 import { labPreset as rateLimiting } from "../../../content/concepts/rate-limiting/lab";
 import { labPreset as reverseProxyVsApiGateway } from "../../../content/concepts/reverse-proxy-vs-api-gateway/lab";
+import { labPreset as cdn } from "../../../content/concepts/cdn/lab";
 
 const presets: Record<string, unknown> = {
   "load-balancing": loadBalancing,
@@ -20,6 +21,7 @@ const presets: Record<string, unknown> = {
   "back-of-envelope-estimation": backOfEnvelopeEstimation,
   "rate-limiting": rateLimiting,
   "reverse-proxy-vs-api-gateway": reverseProxyVsApiGateway,
+  cdn,
 };
 
 export function presetSlugs(): string[] {

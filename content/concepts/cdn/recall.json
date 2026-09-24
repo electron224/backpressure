@@ -1,0 +1,6 @@
+[
+  { "id": "cdn-r1", "q": "Why does a cache hold 220 RPS against a 200 RPS origin?", "a": "Repeat keys hit the edge in ~2ms, so the origin only serves misses and stays under capacity." },
+  { "id": "cdn-r2", "q": "What happens when TTL drops below the key revisit cycle?", "a": "Entries expire before repeats arrive, nearly every request misses, and the shield collapses to direct-origin numbers." },
+  { "id": "cdn-r3", "q": "What is a cache stampede?", "a": "A cold or expired cache sends a miss storm at the origin at once, queueing it past SLO." },
+  { "id": "cdn-r4", "q": "Why ask what cold looks like?", "a": "Every cache starts empty, so the opening miss burst must fit the origin buffer or the deploy itself causes the outage." }
+]

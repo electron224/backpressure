@@ -1,0 +1,21 @@
+# CDN and Edge Caching
+
+A CDN puts cached copies close to users so repeat requests never reach the origin. Hits return in milliseconds; only misses pay full origin latency.
+
+## Why it exists
+
+Origins have finite capacity. At 220 RPS against a 200 RPS origin, direct traffic collapses past 700ms p99 — while the same traffic behind a warm edge holds around 100ms. The cache converts origin load into edge hits.
+
+## The knobs
+
+- **TTL** decides how long an entry serves hits. Long TTL shields the origin; a 1s TTL on a 1.25s revisit cycle means nearly every request misses and the shield collapses.
+- **Capacity** bounds entries; beyond it the oldest goes. A working set larger than capacity churns into all-miss.
+- **Cold start** wounds every deploy: the first pass over the key space all misses. Watch the origin queue absorb the opening burst.
+
+## The failure mode to remember
+
+Stampede: cold cache plus heavy traffic equals a miss storm straight at the origin. Mitigate with longer TTLs, staged rollouts, and request coalescing (single-flight) so concurrent misses share one origin fetch.
+
+## Interview line
+
+"Cache at the edge for hits, size TTL and capacity from the working set, and always ask what cold looks like — every cache is empty on day one."

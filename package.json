@@ -10,8 +10,13 @@
   },
   "devDependencies": {
     "@types/node": "^26.6.2",
+    "drizzle-kit": "^0.31.11",
     "tsx": "4.19.2",
     "typescript": "5.6.3",
     "vitest": "2.1.8"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.3",
+    "postgres": "^3.4.9"
   }
 }

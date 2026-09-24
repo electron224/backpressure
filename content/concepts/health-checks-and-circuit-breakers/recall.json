@@ -1,0 +1,6 @@
+[
+  { "id": "hb-r1", "q": "Why does a balancer without feedback multiply an outage?", "a": "It keeps feeding the dying backend its full share, so those requests all fail while healthy capacity idles." },
+  { "id": "hb-r2", "q": "What do closed, open, and half-open mean?", "a": "Closed flows and counts failures; open ejects until cooldown; half-open sends one trial to detect recovery." },
+  { "id": "hb-r3", "q": "Does a breaker heal the backend?", "a": "No. It bounds the bleeding and holds p99; only the fix or new capacity restores it. Under persistent failure it flaps by design." },
+  { "id": "hb-r4", "q": "Breakers react to traffic failures — what finds failures traffic hasn't hit?", "a": "Active health probes on a tick; the half-open trial here is the probe until the engine grows ticks." }
+]

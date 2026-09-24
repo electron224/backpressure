@@ -11,6 +11,7 @@ import { labPreset as backOfEnvelopeEstimation } from "../../../content/concepts
 import { labPreset as rateLimiting } from "../../../content/concepts/rate-limiting/lab";
 import { labPreset as reverseProxyVsApiGateway } from "../../../content/concepts/reverse-proxy-vs-api-gateway/lab";
 import { labPreset as cdn } from "../../../content/concepts/cdn/lab";
+import { labPreset as healthChecksAndCircuitBreakers } from "../../../content/concepts/health-checks-and-circuit-breakers/lab";
 
 const presets: Record<string, unknown> = {
   "load-balancing": loadBalancing,
@@ -22,6 +23,7 @@ const presets: Record<string, unknown> = {
   "rate-limiting": rateLimiting,
   "reverse-proxy-vs-api-gateway": reverseProxyVsApiGateway,
   cdn,
+  "health-checks-and-circuit-breakers": healthChecksAndCircuitBreakers,
 };
 
 export function presetSlugs(): string[] {

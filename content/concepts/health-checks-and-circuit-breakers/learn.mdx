@@ -1,0 +1,21 @@
+# Health Checks and Circuit Breakers
+
+A balancer that keeps sending traffic to a dying backend multiplies the outage. Health tracking ejects failures; circuit breakers stop asking a known-bad backend and probe recovery with single trials.
+
+## Why it exists
+
+Without feedback, round-robin feeds a failing backend its full share — every one of those requests 503s while healthy capacity idles. With a breaker, three consecutive failures eject the backend: errors collapse several-fold while p99 holds, and half-open trials detect recovery without a thundering return.
+
+## The states
+
+- **Closed** is normal: requests flow, failures counted.
+- **Open** means ejected after the threshold: no traffic until cooldown passes. The backend gets silence to recover.
+- **Half-open** sends one trial past cooldown. Success closes the circuit; failure re-opens it. Under persistent failure this flaps — the breaker bounds the bleeding, it does not heal the backend.
+
+## The failure mode to remember
+
+Active health probes (the balancer calling `/health`) catch failures traffic hasn't found yet; breakers react to failures traffic did find. You want both: probes for fast detection, breakers for instant shedding. Probes need tick scheduling the lab engine grows later — here the trial request is the probe.
+
+## Interview line
+
+"Track outcomes per backend, eject on consecutive failures, probe recovery with half-open trials. A breaker buys time and error budget; only the fix or the autoscaler restores capacity."

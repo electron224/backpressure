@@ -1,0 +1,6 @@
+[
+  { "id": "db-r1", "q": "What sets the stale-read count under async replication?", "a": "Lag times write rate: more writes or longer lag puts more reads inside the window." },
+  { "id": "db-r2", "q": "What does sync replication buy and what does it cost?", "a": "Zero stale reads, paid in write latency equal to the lag on every write." },
+  { "id": "db-r3", "q": "Why does async p99 hold while serving stale reads?", "a": "Writes ack fast and reads serve at full speed; staleness is a correctness bill, not a latency one." },
+  { "id": "db-r4", "q": "What should you size like an SLO for replicas?", "a": "The lag budget: reads lag writes by at most X, with alerts when replicas fall behind it." }
+]

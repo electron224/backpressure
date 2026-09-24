@@ -1,0 +1,4 @@
+[
+  { "id": "db.1", "text": "Async at 500ms lag: stale reads appear while p99 holds", "verdict": "slo.p99", "apply": { "set": { "rps": 80, "writePct": 20, "mode": "async" } }, "show": "async" },
+  { "id": "db.2", "text": "Sync: zero stale, writes pay the lag", "verdict": "slo.p99", "apply": { "set": { "rps": 80, "writePct": 20, "mode": "sync" } }, "show": "sync" }
+]

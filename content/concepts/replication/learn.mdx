@@ -1,0 +1,16 @@
+# Replication
+
+One database is a single point of failure. Replicas copy the primary: reads scale out and survive node loss — but copies lag, and lag serves stale reads.
+
+## Sync vs async
+
+- **Async** acks writes fast and ships the log behind. At 20% writes with 500ms lag, over a hundred reads go stale while p99 holds at 20ms. Speed with a staleness bill.
+- **Sync** waits for replica ack before answering. Zero stale reads, but every write pays the lag: p99 jumps past 500ms. Safety with a latency bill.
+
+## The failure mode to remember
+
+Lag plus write rate sets staleness, not vibes: faster writes or longer lag means more reads land in the window. Size the lag budget like an SLO — "reads lag writes by at most X" — and alert when replicas fall behind it.
+
+## Interview line
+
+"Async for speed with bounded staleness, sync when reads must never go back in time. Always ask what the lag budget is and what breaks when replicas fall behind it."

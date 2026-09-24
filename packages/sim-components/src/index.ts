@@ -17,3 +17,4 @@ export { createPipe } from "./pipe.js";
 export { createQueue } from "./queue.js";
 export type { QueueOpts } from "./queue.js";
 export { createFanout } from "./fan-out.js";
+export type { FanoutOpts } from "./fan-out.js";

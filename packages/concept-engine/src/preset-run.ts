@@ -261,6 +261,21 @@ function resolvedQueueConfig(
   };
 }
 
+function resolvedFanoutConfig(
+  topology: Topology,
+  id: string,
+  presetId: string,
+): { writeOnly: boolean } {
+  const node = topology.nodes.find((n) => n.id === id);
+  if (node === undefined) throw new Error(`preset '${presetId}': unknown node '${id}'`);
+  const base: Record<string, unknown> = isRecord(node.config) ? { ...node.config } : {};
+  const writeOnly: unknown = base["writeOnly"];
+  if (writeOnly !== undefined && typeof writeOnly !== "boolean") {
+    throw new Error(`preset '${presetId}': 'writeOnly' must be a boolean`);
+  }
+  return { writeOnly: writeOnly === true };
+}
+
 function cacheKeySpace(topology: Topology, values: PresetValues): number {
   const node = topology.nodes.find((n) => n.kind === "cache" || n.kind === "database");
   if (node === undefined) return 100;
@@ -378,7 +393,7 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
   });
   const router = routerNode ? createShardRouter(routerNode.id, backends, resolvedRouterConfig(topology, routerNode.id, values, preset.id)) : null;
   const fanoutNode = fanoutNodes[0];
-  const fanout = fanoutNode ? createFanout(fanoutNode.id, backends) : null;
+  const fanout = fanoutNode ? createFanout(fanoutNode.id, backends, resolvedFanoutConfig(topology, fanoutNode.id, preset.id)) : null;
   const queueIds = [...new Set([...queueNodes.map((n) => n.id), ...backends.filter((b) => nodeKind(b) === "queue")])];
   const queues = new Map(
     queueIds.map((id) => {

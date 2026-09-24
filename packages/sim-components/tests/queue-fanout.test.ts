@@ -68,3 +68,20 @@ describe("fan-out", () => {
     expect(() => createFanout("fan", [])).toThrow(/target/i);
   });
 });
+
+describe("fan-out writeOnly", () => {
+  it("fans writes, singles reads", () => {
+    const fanout = createFanout("fan", ["a", "b"], { writeOnly: true });
+    const ctx = testContext();
+    ctx.now = 0;
+    fanout.handler({ at: 0, seq: 0, kind: "request", targetId: "fan", payload: { id: 1 } } as never, ctx);
+    fanout.handler({ at: 1, seq: 1, kind: "write", targetId: "fan", payload: { id: 2 } } as never, ctx);
+    const targets: string[] = [];
+    let e = ctx.queue.pop();
+    while (e !== undefined) {
+      targets.push(e.targetId);
+      e = ctx.queue.pop();
+    }
+    expect(targets).toEqual(["a", "a", "b"]);
+  });
+});

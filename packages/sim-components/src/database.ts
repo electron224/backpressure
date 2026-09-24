@@ -8,6 +8,8 @@ export interface DatabaseOpts {
   lagMs: number;
   keySpace: number;
   mode: ReplicationMode;
+  partitionAt?: number;
+  partitionFor?: number;
 }
 
 interface ReplicaEntry {
@@ -39,6 +41,28 @@ export function createDatabase(
   let arrivals = 0;
   const primary = new Map<number, number>();
   const replica = new Map<number, ReplicaEntry>();
+  const stashed: { key: number; ver: number }[] = [];
+
+  function partitioned(now: number): boolean {
+    return (
+      opts.partitionAt !== undefined &&
+      opts.partitionFor !== undefined &&
+      now >= opts.partitionAt &&
+      now < opts.partitionAt + opts.partitionFor
+    );
+  }
+
+  // Delayed applies land when the link heals; stashed ones flush first.
+  function heal(now: number): void {
+    if (stashed.length === 0) return;
+    if (partitioned(now)) return;
+    for (const pending of stashed.splice(0, stashed.length)) {
+      const current = replica.get(pending.key);
+      if (current === undefined || pending.ver > current.ver) {
+        replica.set(pending.key, { ver: pending.ver, appliedAt: now });
+      }
+    }
+  }
 
   function requestKey(payload: unknown): number {
     if (typeof payload === "object" && payload !== null && "key" in payload) {
@@ -49,6 +73,21 @@ export function createDatabase(
   }
 
   function handleWrite(event: SimEvent, ctx: EngineContext, key: number): void {
+    heal(event.at);
+    if (partitioned(event.at)) {
+      if (opts.mode === "sync") {
+        // CP: no replica ack possible — reject before touching primary.
+        ctx.complete(event.at, 1, false);
+        return;
+      }
+      // AP: ack fast, record the version for post-heal catch-up.
+      writes += 1;
+      const ahead = (primary.get(key) ?? 0) + 1;
+      primary.set(key, ahead);
+      stashed.push({ key, ver: ahead });
+      ctx.complete(event.at, 1, true);
+      return;
+    }
     writes += 1;
     const ver = (primary.get(key) ?? 0) + 1;
     primary.set(key, ver);
@@ -67,6 +106,11 @@ export function createDatabase(
     if (typeof payload !== "object" || payload === null) return;
     const record = payload as { key?: unknown; ver?: unknown };
     if (typeof record.key !== "number" || typeof record.ver !== "number") return;
+    // A partitioned link drops the shipment; heal() replays the stash.
+    if (partitioned(event.at)) {
+      stashed.push({ key: record.key, ver: record.ver });
+      return;
+    }
     const current = replica.get(record.key);
     if (current === undefined || record.ver > current.ver) {
       replica.set(record.key, { ver: record.ver, appliedAt: event.at });
@@ -87,7 +131,13 @@ export function createDatabase(
     if (event.kind !== "request") return;
     const key = requestKey(event.payload);
     arrivals += 1;
+    heal(event.at);
     reads += 1;
+    if (partitioned(event.at) && opts.mode === "sync") {
+      // CP: minority side refuses reads rather than risk staleness.
+      ctx.complete(event.at, 1, false);
+      return;
+    }
     const primaryVer = primary.get(key) ?? 0;
     const replicaVer = replica.get(key)?.ver ?? 0;
     if (replicaVer < primaryVer) stale += 1;

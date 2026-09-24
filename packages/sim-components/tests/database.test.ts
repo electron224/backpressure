@@ -69,3 +69,44 @@ describe("database", () => {
     expect(runOnce()).toEqual(runOnce());
   });
 });
+
+describe("partition window", () => {
+  const partitioned = { partitionAt: 2000, partitionFor: 2000 } as const;
+
+  it("sync fails reads and writes inside the window, zero stale", () => {
+    const db = createDatabase("db", { serviceMs: 20, lagMs: 200, keySpace: 10, mode: "sync", ...partitioned });
+    const ctx = testContext();
+    const failed: boolean[] = [];
+    const inner = ctx.complete.bind(ctx);
+    ctx.complete = (at: number, lat: number, ok: boolean): void => {
+      failed.push(ok);
+      inner(at, lat, ok);
+    };
+    request(db.handler, ctx, 0, 0, "write", 1);
+    request(db.handler, ctx, 2500, 1, "request", 1);
+    request(db.handler, ctx, 2500, 2, "write", 1);
+    request(db.handler, ctx, 4500, 3, "request", 1);
+    expect(failed).toEqual([true, false, false, true]);
+    expect(db.metrics().stale).toBe(0);
+  });
+
+  it("async serves stale inside the window and heals after", () => {
+    const db = createDatabase("db", { serviceMs: 20, lagMs: 200, keySpace: 10, mode: "async", ...partitioned });
+    const ctx = testContext();
+    request(db.handler, ctx, 0, 0, "write", 1);
+    request(db.handler, ctx, 500, 1, "request", 1);
+    request(db.handler, ctx, 2500, 2, "write", 1);
+    request(db.handler, ctx, 2600, 3, "request", 1);
+    const mid = db.metrics();
+    expect(mid.stale).toBeGreaterThan(0);
+    // Drain apply + heal, then read fresh.
+    for (let i = 0; i < 20; i += 1) {
+      const e = ctx.queue.pop();
+      if (!e) break;
+      ctx.now = e.at;
+      db.handler(e as never, ctx);
+    }
+    request(db.handler, ctx, 6000, 4, "request", 1);
+    expect(db.metrics().stale).toBe(mid.stale);
+  });
+});

@@ -85,10 +85,20 @@ function resolvedCacheConfig(
   id: string,
   values: PresetValues,
   presetId: string,
-): { ttlMs: number; capacity: number; keySpace: number; hitMs: number } {
+): { ttlMs: number; capacity: number; keySpace: number; hitMs: number; writePolicy: "aside" | "through" | "behind" | "ahead"; flushMs: number; refreshMarginMs: number } {
   const node = topology.nodes.find((n) => n.id === id);
   if (node === undefined) throw new Error(`preset '${presetId}': unknown node '${id}'`);
   const base: Record<string, unknown> = isRecord(node.config) ? { ...node.config } : {};
+  const policyRaw: unknown = values["writePolicy"] ?? base["writePolicy"];
+  if (
+    policyRaw !== undefined &&
+    policyRaw !== "aside" &&
+    policyRaw !== "through" &&
+    policyRaw !== "behind" &&
+    policyRaw !== "ahead"
+  ) {
+    throw new Error(`preset '${presetId}': unknown write policy '${String(policyRaw)}'`);
+  }
   for (const [key, value] of Object.entries(values)) {
     const dot = key.indexOf(".");
     if (dot === -1 || key.slice(0, dot) !== id) continue;
@@ -97,11 +107,15 @@ function resolvedCacheConfig(
     }
     base[key.slice(dot + 1)] = value;
   }
+  const writePolicy = policyRaw === undefined ? "aside" : policyRaw;
   return {
     ttlMs: numberField(base, "ttlMs", 60_000),
     capacity: numberField(base, "capacity", 1000),
     keySpace: numberField(base, "keySpace", 100),
     hitMs: numberField(base, "hitMs", 2),
+    writePolicy,
+    flushMs: numberField(base, "flushMs", 1000),
+    refreshMarginMs: numberField(base, "refreshMarginMs", Math.floor(numberField(base, "ttlMs", 60_000) / 2)),
   };
 }
 
@@ -153,6 +167,10 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
   const rpsRaw: unknown = values["rps"];
   if (typeof rpsRaw !== "number" || !Number.isFinite(rpsRaw) || rpsRaw <= 0) {
     throw new Error(`preset '${preset.id}': 'rps' must be a positive number`);
+  }
+  const writePctRaw: unknown = values["writePct"] ?? 0;
+  if (typeof writePctRaw !== "number" || !Number.isFinite(writePctRaw) || writePctRaw < 0 || writePctRaw > 100) {
+    throw new Error(`preset '${preset.id}': 'writePct' must be between 0 and 100`);
   }
 
   const graph = compile({
@@ -245,7 +263,13 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
   for (const [id, lim] of limiters) handlers.set(id, lim.handler);
   for (const [id, cache] of caches) handlers.set(id, cache.handler);
 
-  const result = run({ seed, graph, traffic: { rps: rpsRaw, durationMs }, handlers, sloP99Ms: slo });
+  const result = run({
+    seed,
+    graph,
+    traffic: { rps: rpsRaw, durationMs, writeRatio: writePctRaw / 100 },
+    handlers,
+    sloP99Ms: slo,
+  });
   const p99 = result.verdicts.find((v) => v.id === "slo.p99")?.observed ?? 0;
   const passed = result.verdicts.some((v) => v.id === "slo.p99" && v.passed);
   const rejected = result.metrics.reduce((sum, point) => sum + point.errors, 0);

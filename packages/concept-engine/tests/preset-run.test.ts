@@ -238,3 +238,19 @@ describe("breaker opt-in", () => {
     expect(result.narration).toContain("open=[]");
   });
 });
+
+describe("write traffic mix (writePct)", () => {
+  it("completes writes through the chain without loss", () => {
+    const preset = LabPresetSchema.parse(cacheChain);
+    const result = runPreset(preset, { rps: 80, writePct: 20 });
+    expect(result.narration).toContain("writes=");
+    const writes = Number(result.narration.split("writes=")[1]?.split(" ")[0] ?? "NaN");
+    expect(writes).toBeGreaterThan(0);
+  });
+
+  it("rejects out-of-range writePct", () => {
+    const preset = LabPresetSchema.parse(cacheChain);
+    expect(() => runPreset(preset, { rps: 80, writePct: 101 })).toThrow(/writePct/i);
+    expect(() => runPreset(preset, { rps: 80, writePct: -1 })).toThrow(/writePct/i);
+  });
+});

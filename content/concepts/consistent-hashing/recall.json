@@ -1,0 +1,6 @@
+[
+  { "id": "ch-r1", "q": "Why does mod-N remap nearly everything on node add?", "a": "Ownership is key mod N, so changing N reassigns almost every key." },
+  { "id": "ch-r2", "q": "How much moves adding a node to a consistent ring?", "a": "About 1/(N+1) of keys: the new node steals only its own arcs." },
+  { "id": "ch-r3", "q": "What are virtual nodes for?", "a": "Many ring points per real node to even out slice sizes and avoid lumpy hot shards." },
+  { "id": "ch-r4", "q": "What do you watch after a topology change?", "a": "Per-node load: uneven arcs show up as accidental hot shards." }
+]

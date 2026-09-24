@@ -1,0 +1,19 @@
+# Consistent Hashing
+
+Mod-N hashing scatters keys evenly — until the node count changes, when nearly every key remaps. Consistent hashing moves only ~1/(N+1) of keys per add, so growth stops meaning global reshuffle.
+
+## How the ring works
+
+Nodes own points on a ring; each key belongs to the first node clockwise. Virtual nodes (many points per real node) even out the slices. Add a node and it steals only its own arcs — everyone else keeps their keys.
+
+## What the numbers show
+
+Adding a 4th node under mod-N remaps most of 200 sampled keys; the ring moves a quarter-ish while the other three rows stay put. Same traffic, same keys — the difference is entirely the mapping function.
+
+## The failure mode to remember
+
+Uneven arcs: few virtual nodes means lumpy slices and accidental hot shards. Size virtual nodes until the spread flattens, and watch per-node load after every topology change.
+
+## Interview line
+
+"Modulo for fixed fleets, ring with virtual nodes for growing ones. Adding a node should move 1/(N+1) of keys — if it moves everything, your mapping is the outage."

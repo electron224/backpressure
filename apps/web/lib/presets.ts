@@ -16,6 +16,7 @@ import { labPreset as cachingStrategies } from "../../../content/concepts/cachin
 import { labPreset as evictionPolicies } from "../../../content/concepts/eviction-policies/lab";
 import { labPreset as replication } from "../../../content/concepts/replication/lab";
 import { labPreset as sharding } from "../../../content/concepts/sharding/lab";
+import { labPreset as consistentHashing } from "../../../content/concepts/consistent-hashing/lab";
 
 const presets: Record<string, unknown> = {
   "load-balancing": loadBalancing,
@@ -32,6 +33,7 @@ const presets: Record<string, unknown> = {
   "eviction-policies": evictionPolicies,
   replication,
   sharding,
+  "consistent-hashing": consistentHashing,
 };
 
 export function presetSlugs(): string[] {

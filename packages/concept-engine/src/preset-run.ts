@@ -62,7 +62,7 @@ function resolvedDbConfig(
   id: string,
   values: PresetValues,
   presetId: string,
-): { serviceMs: number; lagMs: number; keySpace: number; mode: "async" | "sync" } {
+): { serviceMs: number; lagMs: number; keySpace: number; mode: "async" | "sync"; partitionAt?: number; partitionFor?: number } {
   const node = topology.nodes.find((n) => n.id === id);
   if (node === undefined) throw new Error(`preset '${presetId}': unknown node '${id}'`);
   const base: Record<string, unknown> = isRecord(node.config) ? { ...node.config } : {};
@@ -79,11 +79,21 @@ function resolvedDbConfig(
     }
     merged[key.slice(dot + 1)] = value;
   }
+  const partitionAt = merged["partitionAt"];
+  const partitionFor = merged["partitionFor"];
+  if (partitionAt !== undefined && (typeof partitionAt !== "number" || partitionAt < 0)) {
+    throw new Error(`preset '${presetId}': 'partitionAt' must be a non-negative number`);
+  }
+  if (partitionFor !== undefined && (typeof partitionFor !== "number" || partitionFor <= 0)) {
+    throw new Error(`preset '${presetId}': 'partitionFor' must be a positive number`);
+  }
   return {
     serviceMs: numberField(merged, "serviceMs", 20),
     lagMs: numberField(merged, "lagMs", 2000),
     keySpace: numberField(merged, "keySpace", 100),
     mode: modeRaw === undefined ? "async" : modeRaw,
+    ...(partitionAt === undefined ? {} : { partitionAt }),
+    ...(partitionFor === undefined ? {} : { partitionFor }),
   };
 }
 

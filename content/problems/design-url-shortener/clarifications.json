@@ -1,0 +1,6 @@
+[
+  { "q": "What is the read:write ratio?", "a": "Roughly 100:1 — redirects dominate shortening by two orders of magnitude." },
+  { "q": "Do shortened URLs expire?", "a": "Assume no expiry for this round; mention TTL as a follow-up trade-off." },
+  { "q": "Do we need custom aliases?", "a": "Nice to have; collisions on custom aliases return 409. Core flow first." },
+  { "q": "What QPS should we design for?", "a": "See scale.json once you ask for numbers — estimation is phase 2." }
+]

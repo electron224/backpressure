@@ -1,0 +1,4 @@
+[
+  { "id": "baseline", "rps": 150, "writePct": 5, "sloP99Ms": 150 },
+  { "id": "single-loss", "rps": 150, "writePct": 5, "sloP99Ms": 300, "eachBackend": true }
+]

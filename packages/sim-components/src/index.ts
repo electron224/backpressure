@@ -10,3 +10,4 @@ export { createCache } from "./cache.js";
 export type { CacheOpts, WritePolicy } from "./cache.js";
 export { createDatabase } from "./database.js";
 export type { DatabaseOpts, ReplicationMode } from "./database.js";
+export { createShardRouter } from "./shard-router.js";

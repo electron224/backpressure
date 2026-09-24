@@ -1,0 +1,8 @@
+{
+  "id": "pacelc",
+  "title": "PACELC",
+  "prerequisites": ["cap-theorem"],
+  "difficulty": "advanced",
+  "estimated_minutes": 15,
+  "tags": ["theory", "tier-4"]
+}

@@ -1,0 +1,5 @@
+[
+  { "id": "cm-r1", "q": "What does read-your-writes forbid?", "a": "A client missing its own update: reads must see prior writes from the same session." },
+  { "id": "cm-r2", "q": "Why can p99 look great while users see stale data?", "a": "Latency and staleness are independent bills: fast reads can still land behind recent writes." },
+  { "id": "cm-r3", "q": "When is eventual consistency free?", "a": "At zero lag the replica matches primary, so staleness vanishes with no extra cost." }
+]

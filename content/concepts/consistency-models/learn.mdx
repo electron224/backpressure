@@ -1,0 +1,15 @@
+# Consistency Models
+
+"Eventual" hides a menu: read-your-writes, monotonic reads, causal, strong. Each promises a specific staleness shape — pick the cheapest one your product survives.
+
+## What the lag shows
+
+Zero lag is strong: no stale reads ever, writes pay nothing extra. Raise lag async and staleness appears first on hot keys — reads land behind recent writes exactly when users notice: their own updates missing. Read-your-writes is the model that forbids precisely this; it costs a primary read or session pinning the lab engine grows later.
+
+## The failure mode to remember
+
+Assuming strong from a fast p99: latency says nothing about staleness. Measure both, promise explicitly, and never let "eventual" stand unqualified in a design review.
+
+## Interview line
+
+"Name the model, not the vibe: strong, read-your-writes, monotonic, or eventual — each with its staleness shape and price."

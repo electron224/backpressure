@@ -1,0 +1,8 @@
+{
+  "id": "consistency-models",
+  "title": "Consistency Models",
+  "prerequisites": ["cap-theorem", "replication"],
+  "difficulty": "advanced",
+  "estimated_minutes": 20,
+  "tags": ["theory", "tier-4"]
+}

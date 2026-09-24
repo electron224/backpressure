@@ -1,0 +1,15 @@
+# PACELC
+
+CAP covers partitions. PACELC adds the else: even with no partition, you trade latency against consistency on every write.
+
+## What the lag slider shows
+
+Same database, no partition, 20% writes. Sync mode pays the replica lag on every write — raise lag to 2000ms and write p99 follows it past 500ms with zero stale reads. Async acks fast while staleness climbs with lag × write rate. The partition never happens and the trade never leaves.
+
+## The failure mode to remember
+
+Choosing sync "for safety" then missing p99 because every write waits on a far replica. Latency budgets must include the consistency mechanism, not just the happy path.
+
+## Interview line
+
+"If partitioned pick CAP; else pick latency vs consistency. Sync cost lands on every write — budget it."

@@ -1,0 +1,5 @@
+[
+  { "id": "pace-r1", "q": "What does PACELC add to CAP?", "a": "The else branch: without partitions you still trade latency against consistency on every write." },
+  { "id": "pace-r2", "q": "Where does sync cost land with no partition?", "a": "On every write's latency: p99 follows the replica lag directly." },
+  { "id": "pace-r3", "q": "What must latency budgets include?", "a": "The consistency mechanism, not just the happy path." }
+]

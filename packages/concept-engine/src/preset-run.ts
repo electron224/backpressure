@@ -380,16 +380,17 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
   const router = routerNode ? createShardRouter(routerNode.id, backends, resolvedRouterConfig(topology, routerNode.id, values, preset.id)) : null;
   const fanoutNode = fanoutNodes[0];
   const fanout = fanoutNode ? createFanout(fanoutNode.id, backends) : null;
+  const queueIds = [...new Set([...queueNodes.map((n) => n.id), ...backends.filter((b) => nodeKind(b) === "queue")])];
   const queues = new Map(
-    queueNodes.map((n) => {
-      const downstream = chainTargets.get(n.id);
-      if (downstream === undefined) throw new Error(`queue '${n.id}': missing downstream`);
-      return [n.id, createQueue(n.id, resolvedQueueConfig(topology, n.id, values, preset.id), downstream)];
+    queueIds.map((id) => {
+      const downstream = chainTargets.get(id);
+      if (downstream === undefined) throw new Error(`queue '${id}': missing downstream`);
+      return [id, createQueue(id, resolvedQueueConfig(topology, id, values, preset.id), downstream)];
     }),
   );
   const services = new Map(
     backends
-      .filter((b) => nodeKind(b) !== "database")
+      .filter((b) => nodeKind(b) !== "database" && nodeKind(b) !== "queue")
       .map((b) => [b, createService(b, resolvedServiceConfig(topology, b, values, preset.id))]),
   );
   const databases = new Map(

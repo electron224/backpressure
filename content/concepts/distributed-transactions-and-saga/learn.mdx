@@ -1,0 +1,15 @@
+# Distributed Transactions and Saga
+
+Two-phase commit across services blocks on the slowest voter and dies with the coordinator. Sagas accept the truth: each step commits locally, and failures run compensating steps backward.
+
+## What the dangling step shows
+
+Order then payment, two steps. Kill the payment step and the order step keeps completing — hundreds forwarded, zero shipped. That gap is the saga problem statement: without a compensating refund step, partial completion is silent corruption.
+
+## The failure mode to remember
+
+Missing compensation: the happy path works, the failure path leaves money taken and goods unshipped. Every saga step needs its named undo before the saga needs its forward path.
+
+## Interview line
+
+"2PC for single-database atomicity; sagas across services with a compensation per step. Show the dangling step, then name its refund."

@@ -20,6 +20,8 @@ import { labPreset as capTheorem } from "../../../content/concepts/cap-theorem/l
 import { labPreset as pacelc } from "../../../content/concepts/pacelc/lab";
 import { labPreset as quorumsAndNRW } from "../../../content/concepts/quorums-and-n-r-w/lab";
 import { labPreset as idempotencyAndExactlyOnce } from "../../../content/concepts/idempotency-and-exactly-once/lab";
+import { labPreset as distributedTransactionsAndSaga } from "../../../content/concepts/distributed-transactions-and-saga/lab";
+import { labPreset as leaderElectionIntuition } from "../../../content/concepts/leader-election-intuition/lab";
 import { labPreset as consistencyModels } from "../../../content/concepts/consistency-models/lab";
 import { labPreset as consistentHashing } from "../../../content/concepts/consistent-hashing/lab";
 import { labPreset as sqlVsNosql } from "../../../content/concepts/sql-vs-nosql/lab";
@@ -45,6 +47,8 @@ const presets: Record<string, unknown> = {
   "consistency-models": consistencyModels,
   "quorums-and-n-r-w": quorumsAndNRW,
   "idempotency-and-exactly-once": idempotencyAndExactlyOnce,
+  "distributed-transactions-and-saga": distributedTransactionsAndSaga,
+  "leader-election-intuition": leaderElectionIntuition,
   "consistent-hashing": consistentHashing,
   "sql-vs-nosql": sqlVsNosql,
   indexing,

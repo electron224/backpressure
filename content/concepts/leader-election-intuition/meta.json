@@ -1,0 +1,8 @@
+{
+  "id": "leader-election-intuition",
+  "title": "Leader Election Intuition",
+  "prerequisites": ["health-checks-and-circuit-breakers"],
+  "difficulty": "advanced",
+  "estimated_minutes": 15,
+  "tags": ["theory", "tier-4"]
+}

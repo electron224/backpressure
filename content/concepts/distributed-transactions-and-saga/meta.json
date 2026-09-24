@@ -1,0 +1,8 @@
+{
+  "id": "distributed-transactions-and-saga",
+  "title": "Distributed Transactions and Saga",
+  "prerequisites": ["idempotency-and-exactly-once"],
+  "difficulty": "advanced",
+  "estimated_minutes": 20,
+  "tags": ["theory", "tier-4"]
+}

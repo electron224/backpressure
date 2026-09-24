@@ -1,0 +1,15 @@
+# Leader Election Intuition
+
+Writes need one decider. Leader election picks it: a leader takes all writes while followers replicate, and death of the leader triggers a vote, not an outage.
+
+## What the failover shows
+
+Sticky routing pins every request on the leader while the follower idles by design — no balancing, just standby. Kill the leader and the pin re-seats on the follower with zero config change: the gap is detection delay (failures to threshold), then full service resumes.
+
+## The failure mode to remember
+
+Split brain: two leaders from a partition both accepting writes. Terms, quorums, and fencing tokens exist to prevent it — behavior this lab names but the engine grows later with real partitions and epochs.
+
+## Interview line
+
+"One writer, standby followers, failover on missed heartbeats. No proofs needed — just the gap, the re-seat, and what prevents two leaders."

@@ -1,0 +1,5 @@
+[
+  { "id": "le-r1", "q": "Why does one writer simplify everything?", "a": "No conflicts, no ordering problem: the leader decides and followers copy." },
+  { "id": "le-r2", "q": "What happens when the leader dies?", "a": "After detection delay the pin re-seats on a follower; the gap is threshold times probe interval." },
+  { "id": "le-r3", "q": "What must never happen, and what prevents it?", "a": "Two leaders accepting writes (split brain); terms, quorums, and fencing prevent it." }
+]

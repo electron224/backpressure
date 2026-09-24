@@ -1,0 +1,5 @@
+[
+  { "id": "sg-r1", "q": "Why not 2PC across services?", "a": "It blocks on the slowest voter and dies with the coordinator; services must stay autonomous." },
+  { "id": "sg-r2", "q": "What is the dangling step?", "a": "Completed step-1 side effects with step 2 dead: orders taken, nothing shipped." },
+  { "id": "sg-r3", "q": "What does every saga step need?", "a": "A named compensating action, designed before the forward path." }
+]

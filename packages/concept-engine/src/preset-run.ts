@@ -1,7 +1,7 @@
 // packages/concept-engine/src/preset-run.ts
 import { compile, run } from "@backpressure/sim-core";
 import type { EngineContext, HandlerFn } from "@backpressure/sim-core";
-import { createLoadBalancer, createCache, createDatabase, createDedup, createPipe, createRateLimiter, createService, createShardRouter } from "@backpressure/sim-components";
+import { createLoadBalancer, createCache, createDatabase, createDedup, createFanout, createPipe, createQueue, createRateLimiter, createService, createShardRouter } from "@backpressure/sim-components";
 import type { LabPreset, PresetValues, Topology } from "./schema.js";
 
 export const DEFAULT_SEED = 7;
@@ -236,6 +236,31 @@ function resolvedDedupConfig(
   return { windowMs: numberField(merged, "windowMs", 5000) };
 }
 
+function resolvedQueueConfig(
+  topology: Topology,
+  id: string,
+  values: PresetValues,
+  presetId: string,
+): { drainRps: number; maxDepth: number; poisonEvery: number } {
+  const node = topology.nodes.find((n) => n.id === id);
+  if (node === undefined) throw new Error(`preset '${presetId}': unknown node '${id}'`);
+  const base: Record<string, unknown> = isRecord(node.config) ? { ...node.config } : {};
+  const merged: Record<string, unknown> = { ...base };
+  for (const [key, value] of Object.entries(values)) {
+    const dot = key.indexOf(".");
+    if (dot === -1 || key.slice(0, dot) !== id) continue;
+    if (typeof value !== "number" || !Number.isFinite(value)) {
+      throw new Error(`preset '${presetId}': override '${key}' must be a finite number`);
+    }
+    merged[key.slice(dot + 1)] = value;
+  }
+  return {
+    drainRps: numberField(merged, "drainRps", 100),
+    maxDepth: numberField(merged, "maxDepth", 200),
+    poisonEvery: numberField(merged, "poisonEvery", 0),
+  };
+}
+
 function cacheKeySpace(topology: Topology, values: PresetValues): number {
   const node = topology.nodes.find((n) => n.kind === "cache" || n.kind === "database");
   if (node === undefined) return 100;
@@ -263,7 +288,9 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
   const cacheNodes = topology.nodes.filter((n) => n.kind === "cache");
   const dedupNodes = topology.nodes.filter((n) => n.kind === "dedup");
   const pipeNodes = topology.nodes.filter((n) => n.kind === "pipe");
-  const chainNodes = [...limiterNodes, ...cacheNodes, ...dedupNodes, ...pipeNodes];
+  const queueNodes = topology.nodes.filter((n) => n.kind === "queue");
+  const fanoutNodes = topology.nodes.filter((n) => n.kind === "fan-out");
+  const chainNodes = [...limiterNodes, ...cacheNodes, ...dedupNodes, ...pipeNodes, ...queueNodes];
   const roots = topology.nodes.filter((n) => !topology.edges.some((e) => e.to === n.id));
   if (roots.length !== 1) {
     throw new Error(`preset '${preset.id}': expected exactly 1 entry node, found ${roots.length}`);
@@ -272,6 +299,8 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
     opts?.dropBackend !== undefined &&
     (limiterNodes.some((n) => n.id === opts.dropBackend) ||
       dedupNodes.some((n) => n.id === opts.dropBackend) ||
+      queueNodes.some((n) => n.id === opts.dropBackend) ||
+      fanoutNodes.some((n) => n.id === opts.dropBackend) ||
       routerNode?.id === opts.dropBackend)
   ) {
     return { p99: 0, verdict: "FAIL", narration: `${preset.id}: all backends down — every request fails`, rejected: 0 };
@@ -296,9 +325,12 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
     }
     chainTargets.set(chain.id, targets[0]);
   }
-  // Distributor is the lb or, failing that, the shard router. Backends
-  // come from its edges in either case.
-  const distributor = lbNode ?? routerNode;
+  // Exactly one distributor (lb, router, or fan-out broadcast) per preset.
+  const distributors = [lbNode, routerNode, ...fanoutNodes].filter((n) => n !== undefined);
+  if (distributors.length > 1) {
+    throw new Error(`preset '${preset.id}': at most 1 distributor supported`);
+  }
+  const distributor = distributors[0];
   let backends = distributor
     ? topology.edges.filter((e) => e.from === distributor.id).map((e) => e.to)
     : [...serviceIds];
@@ -346,6 +378,15 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
     ],
   });
   const router = routerNode ? createShardRouter(routerNode.id, backends, resolvedRouterConfig(topology, routerNode.id, values, preset.id)) : null;
+  const fanoutNode = fanoutNodes[0];
+  const fanout = fanoutNode ? createFanout(fanoutNode.id, backends) : null;
+  const queues = new Map(
+    queueNodes.map((n) => {
+      const downstream = chainTargets.get(n.id);
+      if (downstream === undefined) throw new Error(`queue '${n.id}': missing downstream`);
+      return [n.id, createQueue(n.id, resolvedQueueConfig(topology, n.id, values, preset.id), downstream)];
+    }),
+  );
   const services = new Map(
     backends
       .filter((b) => nodeKind(b) !== "database")
@@ -403,6 +444,9 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
   if (routerNode && router !== null) {
     handlers.set(routerNode.id, router.handler);
   }
+  if (fanoutNode && fanout !== null) {
+    handlers.set(fanoutNode.id, fanout.handler);
+  }
   if (lbNode) {
     if (strategy === "sticky") {
       const pinned = backends[0];
@@ -452,6 +496,7 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
   }
   for (const [id, dedup] of dedups) handlers.set(id, dedup.handler);
   for (const [id, cache] of caches) handlers.set(id, cache.handler);
+  for (const [id, queue] of queues) handlers.set(id, queue.handler);
   for (const [id, db] of databases) handlers.set(id, db.handler);
 
   const result = run({
@@ -470,9 +515,10 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
   const p99 = result.verdicts.find((v) => v.id === "slo.p99")?.observed ?? 0;
   const passed = result.verdicts.some((v) => v.id === "slo.p99" && v.passed);
   const rejected = result.metrics.reduce((sum, point) => sum + point.errors, 0);
-  const origin = lb !== null ? lb.narrate() : router !== null ? router.narrate() : "direct";
+  const origin = lb !== null ? lb.narrate() : router !== null ? router.narrate() : fanout !== null ? fanout.narrate() : "direct";
   const narration = [
     origin,
+    ...[...queues.values()].map((q) => q.narrate()),
     ...[...limiters.values()].map((l) => l.narrate()),
     ...[...pipes.values()].map((p) => p.narrate()),
     ...[...dedups.values()].map((d) => d.narrate()),

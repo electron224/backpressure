@@ -14,3 +14,6 @@ export { createShardRouter } from "./shard-router.js";
 export { createDedup } from "./dedup.js";
 export type { DedupOpts } from "./dedup.js";
 export { createPipe } from "./pipe.js";
+export { createQueue } from "./queue.js";
+export type { QueueOpts } from "./queue.js";
+export { createFanout } from "./fan-out.js";

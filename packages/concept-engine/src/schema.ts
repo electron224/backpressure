@@ -42,7 +42,7 @@ export const RecallItemsSchema = z.array(RecallItemSchema).min(1);
 
 export const TopologyNodeSchema = z.object({
   id: z.string().min(1),
-  kind: z.enum(["lb", "service", "rate-limiter", "cache", "database", "shard-router", "dedup", "pipe"]),
+  kind: z.enum(["lb", "service", "rate-limiter", "cache", "database", "shard-router", "dedup", "pipe", "queue", "fan-out"]),
   config: z.record(z.unknown()),
 });
 

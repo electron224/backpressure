@@ -126,7 +126,7 @@ export function ConceptLab({
     const topologies = [preset.topology, ...(preset.variants ?? []).flatMap((v) => (v.topology ? [v.topology] : []))];
     const backends = [
       ...new Set(
-        topologies.flatMap((topology) => topology.nodes.filter((node) => node.kind === "service" || node.kind === "rate-limiter" || node.kind === "shard-router" || node.kind === "dedup" || node.kind === "pipe").map((node) => node.id)),
+        topologies.flatMap((topology) => topology.nodes.filter((node) => node.kind === "service" || node.kind === "rate-limiter" || node.kind === "shard-router" || node.kind === "dedup" || node.kind === "pipe" || node.kind === "queue" || node.kind === "fan-out").map((node) => node.id)),
       ),
     ];
     const fault = pickRandomFault(createRng(SEED + chaosCount * 101), backends);

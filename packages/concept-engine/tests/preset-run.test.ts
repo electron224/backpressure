@@ -254,3 +254,38 @@ describe("write traffic mix (writePct)", () => {
     expect(() => runPreset(preset, { rps: 80, writePct: -1 })).toThrow(/writePct/i);
   });
 });
+
+const dbChain = {
+  id: "repl",
+  topology: {
+    nodes: [{ id: "db", kind: "database", config: { serviceMs: 20, lagMs: 500, keySpace: 100 } }],
+    edges: [],
+  },
+  controls: [],
+  metrics: ["p99"],
+  challenges: [{ id: "d1", text: "Lag", verdict: "slo.p99" }],
+} as const;
+
+describe("database wiring", () => {
+  it("async serves stale, sync stays clean with slower writes", () => {
+    const preset = LabPresetSchema.parse(dbChain);
+    const lagged = { ...preset, topology: preset.topology };
+    const asyncRun = runPreset(lagged, { rps: 80, writePct: 20, skewPct: 120, mode: "async" });
+    const syncRun = runPreset(lagged, { rps: 80, writePct: 20, skewPct: 120, mode: "sync" });
+    expect(asyncRun.narration).toMatch(/stale=[1-9]/);
+    expect(syncRun.narration).toContain("stale=0");
+    expect(syncRun.p99).toBeGreaterThan(asyncRun.p99);
+  });
+
+  it("kill on database fails all-down", () => {
+    const preset = LabPresetSchema.parse(dbChain);
+    const result = runPreset(preset, { rps: 80 }, { dropBackend: "db" });
+    expect(result.verdict).toBe("FAIL");
+    expect(result.narration).toContain("all backends down");
+  });
+
+  it("unknown mode throws", () => {
+    const preset = LabPresetSchema.parse(dbChain);
+    expect(() => runPreset(preset, { rps: 80, mode: "eventual-ish" })).toThrow(/unknown replication mode/i);
+  });
+});

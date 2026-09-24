@@ -1,7 +1,7 @@
 // packages/concept-engine/src/preset-run.ts
 import { compile, run } from "@backpressure/sim-core";
 import type { EngineContext, HandlerFn } from "@backpressure/sim-core";
-import { createLoadBalancer, createCache, createRateLimiter, createService } from "@backpressure/sim-components";
+import { createLoadBalancer, createCache, createDatabase, createRateLimiter, createService } from "@backpressure/sim-components";
 import type { LabPreset, PresetValues, Topology } from "./schema.js";
 
 export const DEFAULT_SEED = 7;
@@ -52,6 +52,36 @@ function resolvedServiceConfig(
     serviceMs: numberField(base, "serviceMs", 20),
     concurrency: numberField(base, "concurrency", 2),
     queueLimit: numberField(base, "queueLimit", 50),
+  };
+}
+
+function resolvedDbConfig(
+  topology: Topology,
+  id: string,
+  values: PresetValues,
+  presetId: string,
+): { serviceMs: number; lagMs: number; keySpace: number; mode: "async" | "sync" } {
+  const node = topology.nodes.find((n) => n.id === id);
+  if (node === undefined) throw new Error(`preset '${presetId}': unknown node '${id}'`);
+  const base: Record<string, unknown> = isRecord(node.config) ? { ...node.config } : {};
+  const modeRaw: unknown = values["mode"] ?? base["mode"];
+  if (modeRaw !== undefined && modeRaw !== "async" && modeRaw !== "sync") {
+    throw new Error(`preset '${presetId}': unknown replication mode '${String(modeRaw)}'`);
+  }
+  const merged: Record<string, unknown> = { ...base };
+  for (const [key, value] of Object.entries(values)) {
+    const dot = key.indexOf(".");
+    if (dot === -1 || key.slice(0, dot) !== id) continue;
+    if (typeof value !== "number" || !Number.isFinite(value)) {
+      throw new Error(`preset '${presetId}': override '${key}' must be a finite number`);
+    }
+    merged[key.slice(dot + 1)] = value;
+  }
+  return {
+    serviceMs: numberField(merged, "serviceMs", 20),
+    lagMs: numberField(merged, "lagMs", 2000),
+    keySpace: numberField(merged, "keySpace", 100),
+    mode: modeRaw === undefined ? "async" : modeRaw,
   };
 }
 
@@ -135,7 +165,7 @@ function resolvedCacheConfig(
 }
 
 function cacheKeySpace(topology: Topology, values: PresetValues): number {
-  const node = topology.nodes.find((n) => n.kind === "cache");
+  const node = topology.nodes.find((n) => n.kind === "cache" || n.kind === "database");
   if (node === undefined) return 100;
   const override: unknown = values[`${node.id}.keySpace`];
   if (typeof override === "number" && Number.isFinite(override) && override > 0) return Math.floor(override);
@@ -151,7 +181,11 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
   const topology = preset.topology;
 
   const lbNode = topology.nodes.find((n) => n.kind === "lb");
-  const serviceIds = topology.nodes.filter((n) => n.kind === "service").map((n) => n.id);
+  // Database nodes are service-like terminals: they serve reads and writes
+  // directly and participate in backend drop semantics.
+  const serviceIds = topology.nodes
+    .filter((n) => n.kind === "service" || n.kind === "database")
+    .map((n) => n.id);
   const limiterNodes = topology.nodes.filter((n) => n.kind === "rate-limiter");
   const cacheNodes = topology.nodes.filter((n) => n.kind === "cache");
   const chainNodes = [...limiterNodes, ...cacheNodes];
@@ -205,11 +239,12 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
     throw new Error(`preset '${preset.id}': 'skewPct' must be between 0 and 200`);
   }
 
+  const nodeKind = (nid: string): string => topology.nodes.find((n) => n.id === nid)?.kind ?? "service";
   const graph = compile({
     nodes: [
       ...(lbNode ? [{ id: lbNode.id, kind: "lb", config: {} }] : []),
       ...chainNodes.map((n) => ({ id: n.id, kind: n.kind, config: {} })),
-      ...backends.map((b) => ({ id: b, kind: "service", config: {} })),
+      ...backends.map((b) => ({ id: b, kind: nodeKind(b), config: {} })),
     ],
     edges: [
       ...[...chainTargets.entries()].map(([from, to]) => ({ from, to })),
@@ -217,7 +252,14 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
     ],
   });
   const services = new Map(
-    backends.map((b) => [b, createService(b, resolvedServiceConfig(topology, b, values, preset.id))]),
+    backends
+      .filter((b) => nodeKind(b) !== "database")
+      .map((b) => [b, createService(b, resolvedServiceConfig(topology, b, values, preset.id))]),
+  );
+  const databases = new Map(
+    backends
+      .filter((b) => nodeKind(b) === "database")
+      .map((b) => [b, createDatabase(b, resolvedDbConfig(topology, b, values, preset.id))]),
   );
   const limiters = new Map(
     limiterNodes.map((n) => {
@@ -294,6 +336,7 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
   }
   for (const [id, lim] of limiters) handlers.set(id, lim.handler);
   for (const [id, cache] of caches) handlers.set(id, cache.handler);
+  for (const [id, db] of databases) handlers.set(id, db.handler);
 
   const result = run({
     seed,
@@ -320,6 +363,7 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
     ...[...limiters.values()].map((l) => l.narrate()),
     ...[...caches.values()].map((c) => c.narrate()),
     ...[...services.values()].map((s) => s.narrate()),
+    ...[...databases.values()].map((d) => d.narrate()),
   ].join(" | ");
   return { p99, verdict: passed ? "PASS" : "FAIL", narration, rejected };
 }

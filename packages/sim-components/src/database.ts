@@ -2,6 +2,7 @@
 import type { EngineContext, HandlerFn, SimEvent } from "@backpressure/sim-core";
 
 export type ReplicationMode = "async" | "sync";
+export type WriteConcern = "one" | "majority" | "all";
 
 export interface DatabaseOpts {
   serviceMs: number;
@@ -10,11 +11,8 @@ export interface DatabaseOpts {
   mode: ReplicationMode;
   partitionAt?: number;
   partitionFor?: number;
-}
-
-interface ReplicaEntry {
-  ver: number;
-  appliedAt: number;
+  replicas?: number[];
+  writeConcern?: WriteConcern;
 }
 
 export function createDatabase(
@@ -40,8 +38,21 @@ export function createDatabase(
   let stale = 0;
   let arrivals = 0;
   const primary = new Map<number, number>();
-  const replica = new Map<number, ReplicaEntry>();
-  const stashed: { key: number; ver: number }[] = [];
+  // Per-key version per replica index; lags[i] is replica i's delay.
+  const replicaVers = new Map<number, number[]>();
+  const lags: number[] =
+    opts.replicas !== undefined && opts.replicas.length > 0 ? [...opts.replicas] : [opts.lagMs];
+  for (const lag of lags) {
+    if (!Number.isFinite(lag) || lag < 0) throw new Error(`database '${id}': replica lags must be non-negative numbers`);
+  }
+  const sortedLags = [...lags].sort((a, b) => a - b);
+  const concern = opts.writeConcern ?? (opts.mode === "sync" ? "all" : "one");
+  if (concern !== "one" && concern !== "majority" && concern !== "all") {
+    throw new Error(`database '${id}': unknown write concern '${concern}'`);
+  }
+  const quorumCount = concern === "one" ? 1 : concern === "all" ? sortedLags.length : Math.floor(sortedLags.length / 2) + 1;
+  const quorumLag = sortedLags[quorumCount - 1] ?? opts.lagMs;
+  const stashed: { key: number; ver: number; replica: number }[] = [];
 
   function partitioned(now: number): boolean {
     return (
@@ -57,10 +68,19 @@ export function createDatabase(
     if (stashed.length === 0) return;
     if (partitioned(now)) return;
     for (const pending of stashed.splice(0, stashed.length)) {
-      const current = replica.get(pending.key);
-      if (current === undefined || pending.ver > current.ver) {
-        replica.set(pending.key, { ver: pending.ver, appliedAt: now });
-      }
+      const versions = replicaVers.get(pending.key) ?? [];
+      while (versions.length < lags.length) versions.push(0);
+      if (pending.ver > (versions[pending.replica] ?? 0)) versions[pending.replica] = pending.ver;
+      replicaVers.set(pending.key, versions);
+    }
+  }
+
+  function applyVersion(key: number, ver: number, replica: number): void {
+    const versions = replicaVers.get(key) ?? [];
+    while (versions.length < lags.length) versions.push(0);
+    if (ver > (versions[replica] ?? 0)) {
+      versions[replica] = ver;
+      replicaVers.set(key, versions);
     }
   }
 
@@ -80,11 +100,13 @@ export function createDatabase(
         ctx.complete(event.at, 1, false);
         return;
       }
-      // AP: ack fast, record the version for post-heal catch-up.
+      // AP: ack fast, record the version on every replica for catch-up.
       writes += 1;
       const ahead = (primary.get(key) ?? 0) + 1;
       primary.set(key, ahead);
-      stashed.push({ key, ver: ahead });
+      for (let replica = 0; replica < lags.length; replica += 1) {
+        stashed.push({ key, ver: ahead, replica });
+      }
       ctx.complete(event.at, 1, true);
       return;
     }
@@ -92,29 +114,34 @@ export function createDatabase(
     const ver = (primary.get(key) ?? 0) + 1;
     primary.set(key, ver);
     if (opts.mode === "sync") {
-      replica.set(key, { ver, appliedAt: event.at });
-      ctx.complete(event.at + opts.serviceMs + opts.lagMs, opts.serviceMs + opts.lagMs, true);
+      // Quorum ack: the W-th fastest replica decides write latency.
+      // All replicas converge at ack time (conservative: never stale).
+      for (let replica = 0; replica < lags.length; replica += 1) {
+        applyVersion(key, ver, replica);
+      }
+      const costMs = opts.serviceMs + quorumLag;
+      ctx.complete(event.at + costMs, costMs, true);
       return;
     }
-    // Modeled fast ack: the caller proceeds while the replica applies later.
+    // Modeled fast ack: the caller proceeds while replicas apply later.
     ctx.complete(event.at, 1, true);
-    ctx.queue.push(event.at + opts.lagMs, `apply:${id}`, id, { key, ver });
+    lags.forEach((lag, replica) => {
+      ctx.queue.push(event.at + lag, `apply:${id}`, id, { key, ver, replica });
+    });
   }
 
   function handleApply(event: SimEvent): void {
     const payload: unknown = event.payload;
     if (typeof payload !== "object" || payload === null) return;
-    const record = payload as { key?: unknown; ver?: unknown };
+    const record = payload as { key?: unknown; ver?: unknown; replica?: unknown };
     if (typeof record.key !== "number" || typeof record.ver !== "number") return;
+    const replica = typeof record.replica === "number" ? record.replica : 0;
     // A partitioned link drops the shipment; heal() replays the stash.
     if (partitioned(event.at)) {
-      stashed.push({ key: record.key, ver: record.ver });
+      stashed.push({ key: record.key, ver: record.ver, replica });
       return;
     }
-    const current = replica.get(record.key);
-    if (current === undefined || record.ver > current.ver) {
-      replica.set(record.key, { ver: record.ver, appliedAt: event.at });
-    }
+    applyVersion(record.key, record.ver, replica);
   }
 
   function handler(event: SimEvent, ctx: EngineContext): void {
@@ -139,7 +166,9 @@ export function createDatabase(
       return;
     }
     const primaryVer = primary.get(key) ?? 0;
-    const replicaVer = replica.get(key)?.ver ?? 0;
+    // Reads land on a random replica (seeded RNG: deterministic per seed).
+    const replicaIdx = lags.length === 1 ? 0 : Math.floor(ctx.rng.next() * lags.length);
+    const replicaVer = replicaVers.get(key)?.[replicaIdx] ?? 0;
     if (replicaVer < primaryVer) stale += 1;
     ctx.complete(event.at + opts.serviceMs, opts.serviceMs, true);
   }

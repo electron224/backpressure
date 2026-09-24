@@ -62,13 +62,17 @@ function resolvedDbConfig(
   id: string,
   values: PresetValues,
   presetId: string,
-): { serviceMs: number; lagMs: number; keySpace: number; mode: "async" | "sync"; partitionAt?: number; partitionFor?: number } {
+): { serviceMs: number; lagMs: number; keySpace: number; mode: "async" | "sync"; partitionAt?: number; partitionFor?: number; replicas?: number[]; writeConcern?: "one" | "majority" | "all" } {
   const node = topology.nodes.find((n) => n.id === id);
   if (node === undefined) throw new Error(`preset '${presetId}': unknown node '${id}'`);
   const base: Record<string, unknown> = isRecord(node.config) ? { ...node.config } : {};
   const modeRaw: unknown = values["mode"] ?? base["mode"];
   if (modeRaw !== undefined && modeRaw !== "async" && modeRaw !== "sync") {
     throw new Error(`preset '${presetId}': unknown replication mode '${String(modeRaw)}'`);
+  }
+  const quorumRaw: unknown = values["quorum"] ?? base["quorum"];
+  if (quorumRaw !== undefined && quorumRaw !== "one" && quorumRaw !== "majority" && quorumRaw !== "all") {
+    throw new Error(`preset '${presetId}': unknown write concern '${String(quorumRaw)}'`);
   }
   const merged: Record<string, unknown> = { ...base };
   for (const [key, value] of Object.entries(values)) {
@@ -87,11 +91,18 @@ function resolvedDbConfig(
   if (partitionFor !== undefined && (typeof partitionFor !== "number" || partitionFor <= 0)) {
     throw new Error(`preset '${presetId}': 'partitionFor' must be a positive number`);
   }
+  const mode = modeRaw === undefined ? "async" : modeRaw;
+  const quorum = quorumRaw === undefined ? undefined : quorumRaw;
+  const replicasRaw: unknown = base["replicas"];
+  const replicas =
+    Array.isArray(replicasRaw) && replicasRaw.every((r): r is number => typeof r === "number") ? replicasRaw : undefined;
   return {
     serviceMs: numberField(merged, "serviceMs", 20),
     lagMs: numberField(merged, "lagMs", 2000),
     keySpace: numberField(merged, "keySpace", 100),
-    mode: modeRaw === undefined ? "async" : modeRaw,
+    mode,
+    ...(quorum === undefined ? {} : { writeConcern: quorum }),
+    ...(replicas === undefined ? {} : { replicas }),
     ...(partitionAt === undefined ? {} : { partitionAt }),
     ...(partitionFor === undefined ? {} : { partitionFor }),
   };

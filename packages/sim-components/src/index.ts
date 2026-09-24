@@ -9,5 +9,5 @@ export type { LimiterAlgorithm, RateLimiterOpts } from "./rate-limiter.js";
 export { createCache } from "./cache.js";
 export type { CacheOpts, WritePolicy } from "./cache.js";
 export { createDatabase } from "./database.js";
-export type { DatabaseOpts, ReplicationMode } from "./database.js";
+export type { DatabaseOpts, ReplicationMode, WriteConcern } from "./database.js";
 export { createShardRouter } from "./shard-router.js";

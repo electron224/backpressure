@@ -110,3 +110,35 @@ describe("partition window", () => {
     expect(db.metrics().stale).toBe(mid.stale);
   });
 });
+
+describe("quorum replicas", () => {
+  const lags = [100, 500, 2000];
+
+  it("write latency follows the concern quorum", () => {
+    const lats: Record<string, number[]> = { one: [], majority: [], all: [] };
+    for (const concern of ["one", "majority", "all"] as const) {
+      const db = createDatabase("db", { serviceMs: 20, lagMs: 500, keySpace: 10, mode: "sync", replicas: lags, writeConcern: concern });
+      const ctx = testContext();
+      const inner = ctx.complete.bind(ctx);
+      ctx.complete = (at: number, lat: number, ok: boolean): void => {
+        if (ok) lats[concern]?.push(lat);
+        inner(at, lat, ok);
+      };
+      request(db.handler, ctx, 0, 0, "write", 1);
+    }
+    expect(lats["one"]).toEqual([120]);
+    expect(lats["majority"]).toEqual([520]);
+    expect(lats["all"]).toEqual([2020]);
+  });
+
+  it("reads spread across replicas and go stale", () => {
+    const db = createDatabase("db", { serviceMs: 20, lagMs: 2000, keySpace: 10, mode: "async", replicas: lags });
+    const ctx = testContext();
+    request(db.handler, ctx, 0, 0, "write", 1);
+    request(db.handler, ctx, 100, 1, "request", 1);
+    request(db.handler, ctx, 200, 2, "request", 1);
+    const m = db.metrics();
+    expect(m.reads).toBe(2);
+    expect(m.stale).toBeGreaterThanOrEqual(1);
+  });
+});

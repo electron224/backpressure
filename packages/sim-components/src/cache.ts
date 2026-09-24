@@ -2,6 +2,7 @@
 import type { EngineContext, HandlerFn, SimEvent } from "@backpressure/sim-core";
 
 export type WritePolicy = "aside" | "through" | "behind" | "ahead";
+export type EvictionPolicy = "fifo" | "lru" | "lfu";
 
 export interface CacheOpts {
   ttlMs: number;
@@ -9,6 +10,7 @@ export interface CacheOpts {
   keySpace: number;
   hitMs: number;
   writePolicy?: WritePolicy;
+  eviction?: EvictionPolicy;
   flushMs?: number;
   refreshMarginMs?: number;
 }
@@ -37,6 +39,10 @@ export function createCache(
   }
   if (downstream.length === 0) throw new Error(`cache '${id}': missing downstream`);
   const policy = opts.writePolicy ?? "aside";
+  const eviction = opts.eviction ?? "fifo";
+  if (eviction !== "fifo" && eviction !== "lru" && eviction !== "lfu") {
+    throw new Error(`cache '${id}': unknown eviction '${eviction}'`);
+  }
   const flushMs = opts.flushMs ?? 1000;
   const refreshMarginMs = opts.refreshMarginMs ?? Math.floor(opts.ttlMs / 2);
   if (!Number.isFinite(flushMs) || flushMs <= 0) {
@@ -46,16 +52,68 @@ export function createCache(
   let hits = 0;
   let misses = 0;
   let writes = 0;
+  let evictions = 0;
   let arrivals = 0;
   const entries = new Map<number, number>();
+  const frequencies = new Map<number, number>();
   const dirty = new Set<number>();
   let flushDue = false;
 
+  // Keyed arrivals (zipfian traffic) carry their key in the payload;
+  // otherwise fall back to cyclic keys so legacy presets are untouched.
+  function requestKey(payload: unknown): number {
+    if (typeof payload === "object" && payload !== null && "key" in payload) {
+      const key: unknown = payload.key;
+      if (typeof key === "number" && Number.isInteger(key) && key >= 0) return key;
+    }
+    const key = arrivals % opts.keySpace;
+    return key;
+  }
+
+  function evictOne(): void {
+    if (eviction === "lfu") {
+      let victim: number | undefined;
+      let victimFreq = Number.POSITIVE_INFINITY;
+      for (const [key] of entries) {
+        const freq = frequencies.get(key) ?? 0;
+        if (freq < victimFreq) {
+          victimFreq = freq;
+          victim = key;
+        }
+      }
+      if (victim !== undefined) {
+        entries.delete(victim);
+        frequencies.delete(victim);
+        evictions += 1;
+      }
+      return;
+    }
+    // fifo and lru both evict the Map-first key: insertion order for fifo,
+    // recency order for lru because hits refresh position below.
+    const oldest = entries.keys().next();
+    if (!oldest.done) {
+      entries.delete(oldest.value);
+      frequencies.delete(oldest.value);
+      evictions += 1;
+    }
+  }
+
   function store(key: number, now: number): void {
     entries.set(key, now + opts.ttlMs);
-    if (entries.size > opts.capacity) {
-      const oldest = entries.keys().next();
-      if (!oldest.done) entries.delete(oldest.value);
+    frequencies.set(key, (frequencies.get(key) ?? 0) + 1);
+    while (entries.size > opts.capacity) evictOne();
+  }
+
+  function recordHit(key: number): void {
+    if (eviction === "lru") {
+      const expiresAt = entries.get(key);
+      if (expiresAt !== undefined) {
+        entries.delete(key);
+        entries.set(key, expiresAt);
+      }
+    }
+    if (eviction === "lfu") {
+      frequencies.set(key, (frequencies.get(key) ?? 0) + 1);
     }
   }
 
@@ -98,13 +156,13 @@ export function createCache(
       return;
     }
     if (event.kind === "write") {
-      const key = arrivals % opts.keySpace;
+      const key = requestKey(event.payload);
       arrivals += 1;
       handleWrite(event, ctx, key);
       return;
     }
     if (event.kind !== "request") return;
-    const key = arrivals % opts.keySpace;
+    const key = requestKey(event.payload);
     arrivals += 1;
     const expiresAt = entries.get(key);
     if (expiresAt !== undefined && expiresAt > event.at) {
@@ -116,6 +174,7 @@ export function createCache(
         ctx.queue.push(event.at, "request", downstream, event.payload);
         return;
       }
+      recordHit(key);
       hits += 1;
       ctx.complete(event.at + opts.hitMs, opts.hitMs, true);
       return;
@@ -130,15 +189,17 @@ export function createCache(
   }
 
   function narrate(): string {
-    return `cache(${opts.ttlMs}ms cap=${opts.capacity} keys=${opts.keySpace}): hits=${hits} misses=${misses} writes=${writes} dirty=${dirty.size}`;
+    return `cache(${opts.ttlMs}ms cap=${opts.capacity} keys=${opts.keySpace}): hits=${hits} misses=${misses} writes=${writes} dirty=${dirty.size} evict=${evictions}`;
   }
 
   function reset(): void {
     hits = 0;
     misses = 0;
     writes = 0;
+    evictions = 0;
     arrivals = 0;
     entries.clear();
+    frequencies.clear();
     dirty.clear();
     flushDue = false;
   }

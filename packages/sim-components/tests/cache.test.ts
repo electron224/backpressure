@@ -132,3 +132,46 @@ describe("write policies", () => {
     expect(cache.metrics().hits).toBe(1);
   });
 });
+
+function keyed(
+  handler: (event: never, ctx: EngineContext) => void,
+  ctx: EngineContext,
+  at: number,
+  seq: number,
+  key: number,
+): void {
+  ctx.now = at;
+  handler({ at, seq, kind: "request", targetId: "edge", payload: { key } } as never, ctx);
+}
+
+describe("eviction", () => {
+  // Hot keys 0,1 interleaved with a cold scan, capacity 3.
+  // Hand-traced: fifo serves 6 hits, lru 12, lfu protects hot keys too.
+  const SEQUENCE = [0, 1, 2, 0, 1, 3, 0, 1, 4, 0, 1, 5, 0, 1, 2, 0, 1, 3, 0, 1];
+
+  function skewedRun(eviction: "fifo" | "lru" | "lfu"): { hits: number; misses: number } {
+    const cache = createCache(
+      "edge",
+      { ttlMs: 600_000, capacity: 3, keySpace: 10, hitMs: 2, eviction },
+      "origin",
+    );
+    const ctx = testContext();
+    SEQUENCE.forEach((key, i) => keyed(cache.handler, ctx, i, i, key));
+    return cache.metrics();
+  }
+
+  it("lru keeps hot keys, fifo evicts them", () => {
+    expect(skewedRun("fifo").hits).toBe(6);
+    expect(skewedRun("lru").hits).toBe(12);
+  });
+
+  it("lfu protects frequent keys", () => {
+    expect(skewedRun("lfu").hits).toBeGreaterThan(skewedRun("fifo").hits);
+  });
+
+  it("rejects unknown eviction", () => {
+    expect(() =>
+      createCache("edge", { ttlMs: 1000, capacity: 5, keySpace: 10, hitMs: 2, eviction: "mru" as never }, "origin"),
+    ).toThrow(/unknown eviction/i);
+  });
+});

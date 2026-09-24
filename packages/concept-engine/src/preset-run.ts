@@ -85,11 +85,24 @@ function resolvedCacheConfig(
   id: string,
   values: PresetValues,
   presetId: string,
-): { ttlMs: number; capacity: number; keySpace: number; hitMs: number; writePolicy: "aside" | "through" | "behind" | "ahead"; flushMs: number; refreshMarginMs: number } {
+): { ttlMs: number; capacity: number; keySpace: number; hitMs: number; writePolicy: "aside" | "through" | "behind" | "ahead"; eviction: "fifo" | "lru" | "lfu"; flushMs: number; refreshMarginMs: number } {
   const node = topology.nodes.find((n) => n.id === id);
   if (node === undefined) throw new Error(`preset '${presetId}': unknown node '${id}'`);
   const base: Record<string, unknown> = isRecord(node.config) ? { ...node.config } : {};
   const policyRaw: unknown = values["writePolicy"] ?? base["writePolicy"];
+  if (
+    policyRaw !== undefined &&
+    policyRaw !== "aside" &&
+    policyRaw !== "through" &&
+    policyRaw !== "behind" &&
+    policyRaw !== "ahead"
+  ) {
+    throw new Error(`preset '${presetId}': unknown write policy '${String(policyRaw)}'`);
+  }
+  const evictionRaw: unknown = values["eviction"] ?? base["eviction"];
+  if (evictionRaw !== undefined && evictionRaw !== "fifo" && evictionRaw !== "lru" && evictionRaw !== "lfu") {
+    throw new Error(`preset '${presetId}': unknown eviction '${String(evictionRaw)}'`);
+  }
   if (
     policyRaw !== undefined &&
     policyRaw !== "aside" &&
@@ -108,15 +121,27 @@ function resolvedCacheConfig(
     base[key.slice(dot + 1)] = value;
   }
   const writePolicy = policyRaw === undefined ? "aside" : policyRaw;
+  const eviction = evictionRaw === undefined ? "fifo" : evictionRaw;
   return {
     ttlMs: numberField(base, "ttlMs", 60_000),
     capacity: numberField(base, "capacity", 1000),
     keySpace: numberField(base, "keySpace", 100),
     hitMs: numberField(base, "hitMs", 2),
     writePolicy,
+    eviction,
     flushMs: numberField(base, "flushMs", 1000),
     refreshMarginMs: numberField(base, "refreshMarginMs", Math.floor(numberField(base, "ttlMs", 60_000) / 2)),
   };
+}
+
+function cacheKeySpace(topology: Topology, values: PresetValues): number {
+  const node = topology.nodes.find((n) => n.kind === "cache");
+  if (node === undefined) return 100;
+  const override: unknown = values[`${node.id}.keySpace`];
+  if (typeof override === "number" && Number.isFinite(override) && override > 0) return Math.floor(override);
+  const config: unknown = node.config;
+  if (!isRecord(config)) return 100;
+  return numberField(config, "keySpace", 100);
 }
 
 export function runPreset(preset: LabPreset, values: PresetValues, opts?: PresetRunOpts): PresetRunResult {
@@ -171,6 +196,13 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
   const writePctRaw: unknown = values["writePct"] ?? 0;
   if (typeof writePctRaw !== "number" || !Number.isFinite(writePctRaw) || writePctRaw < 0 || writePctRaw > 100) {
     throw new Error(`preset '${preset.id}': 'writePct' must be between 0 and 100`);
+  }
+  // Skewed keys are opt-in (skewPct slider): without it traffic stays
+  // unkeyed and legacy presets are byte-identical.
+  const skewRaw: unknown = values["skewPct"];
+  const keyAlpha = skewRaw === undefined ? undefined : Number(skewRaw) / 100;
+  if (keyAlpha !== undefined && (!Number.isFinite(keyAlpha) || keyAlpha < 0 || keyAlpha > 2)) {
+    throw new Error(`preset '${preset.id}': 'skewPct' must be between 0 and 200`);
   }
 
   const graph = compile({
@@ -266,7 +298,16 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
   const result = run({
     seed,
     graph,
-    traffic: { rps: rpsRaw, durationMs, writeRatio: writePctRaw / 100 },
+    traffic:
+      keyAlpha === undefined
+        ? { rps: rpsRaw, durationMs, writeRatio: writePctRaw / 100 }
+        : {
+            rps: rpsRaw,
+            durationMs,
+            writeRatio: writePctRaw / 100,
+            keyAlpha,
+            keySpace: cacheKeySpace(topology, values),
+          },
     handlers,
     sloP99Ms: slo,
   });

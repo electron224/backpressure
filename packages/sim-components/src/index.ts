@@ -13,3 +13,4 @@ export type { DatabaseOpts, ReplicationMode, WriteConcern } from "./database.js"
 export { createShardRouter } from "./shard-router.js";
 export { createDedup } from "./dedup.js";
 export type { DedupOpts } from "./dedup.js";
+export { createPipe } from "./pipe.js";

@@ -1,7 +1,7 @@
 // packages/concept-engine/src/preset-run.ts
 import { compile, run } from "@backpressure/sim-core";
 import type { EngineContext, HandlerFn } from "@backpressure/sim-core";
-import { createLoadBalancer, createCache, createDatabase, createDedup, createRateLimiter, createService, createShardRouter } from "@backpressure/sim-components";
+import { createLoadBalancer, createCache, createDatabase, createDedup, createPipe, createRateLimiter, createService, createShardRouter } from "@backpressure/sim-components";
 import type { LabPreset, PresetValues, Topology } from "./schema.js";
 
 export const DEFAULT_SEED = 7;
@@ -262,7 +262,8 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
   const limiterNodes = topology.nodes.filter((n) => n.kind === "rate-limiter");
   const cacheNodes = topology.nodes.filter((n) => n.kind === "cache");
   const dedupNodes = topology.nodes.filter((n) => n.kind === "dedup");
-  const chainNodes = [...limiterNodes, ...cacheNodes, ...dedupNodes];
+  const pipeNodes = topology.nodes.filter((n) => n.kind === "pipe");
+  const chainNodes = [...limiterNodes, ...cacheNodes, ...dedupNodes, ...pipeNodes];
   const roots = topology.nodes.filter((n) => !topology.edges.some((e) => e.to === n.id));
   if (roots.length !== 1) {
     throw new Error(`preset '${preset.id}': expected exactly 1 entry node, found ${roots.length}`);
@@ -275,6 +276,12 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
   ) {
     return { p99: 0, verdict: "FAIL", narration: `${preset.id}: all backends down — every request fails`, rejected: 0 };
   }
+  // Dropped pipes vanish mid-chain: upstream steps complete while the rest
+  // of the workflow never runs. That dangling partial completion is the
+  // saga problem statement, so pipes stay out of the all-down rule.
+  const deadPipes = new Set(
+    pipeNodes.filter((n) => n.id === opts?.dropBackend).map((n) => n.id),
+  );
   // Dropped cache = cold restart, which matches the fresh-run state:
   // ignore the drop and run normally.
   const effectiveDrop =
@@ -348,6 +355,13 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
     backends
       .filter((b) => nodeKind(b) === "database")
       .map((b) => [b, createDatabase(b, resolvedDbConfig(topology, b, values, preset.id))]),
+  );
+  const pipes = new Map(
+    pipeNodes.map((n) => {
+      const downstream = chainTargets.get(n.id);
+      if (downstream === undefined) throw new Error(`pipe '${n.id}': missing downstream`);
+      return [n.id, createPipe(n.id, downstream)];
+    }),
   );
   const limiters = new Map(
     limiterNodes.map((n) => {
@@ -433,6 +447,9 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
     }
   }
   for (const [id, lim] of limiters) handlers.set(id, lim.handler);
+  for (const [id, pipe] of pipes) {
+    if (!deadPipes.has(id)) handlers.set(id, pipe.handler);
+  }
   for (const [id, dedup] of dedups) handlers.set(id, dedup.handler);
   for (const [id, cache] of caches) handlers.set(id, cache.handler);
   for (const [id, db] of databases) handlers.set(id, db.handler);
@@ -457,6 +474,7 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
   const narration = [
     origin,
     ...[...limiters.values()].map((l) => l.narrate()),
+    ...[...pipes.values()].map((p) => p.narrate()),
     ...[...dedups.values()].map((d) => d.narrate()),
     ...[...caches.values()].map((c) => c.narrate()),
     ...[...services.values()].map((s) => s.narrate()),

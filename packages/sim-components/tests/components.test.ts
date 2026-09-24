@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { EventQueue } from "@backpressure/sim-core";
 import { createRng } from "@backpressure/sim-core";
 import { createService } from "../src/service.js";
+import { createPipe } from "../src/pipe.js";
 
 describe("service", () => {
   it("returns 503 when queue overflows", () => {
@@ -72,5 +73,23 @@ describe("service read/write split", () => {
       svc.handler(e, ctx);
     }
     expect(latencies).toEqual([20]);
+  });
+});
+
+describe("pipe", () => {
+  it("forwards requests and writes with counts", () => {
+    const pipe = createPipe("p1", "svc");
+    const forwarded: string[] = [];
+    const queue = new EventQueue();
+    const ctx = { now: 0, queue, rng: createRng(1), complete: () => {} };
+    const inner = queue.push.bind(queue);
+    queue.push = (at: number, kind: string, target: string, payload?: unknown): void => {
+      forwarded.push(`${kind}:${target}`);
+      inner(at, kind, target, payload);
+    };
+    pipe.handler({ at: 0, seq: 0, kind: "request", targetId: "p1" }, ctx);
+    pipe.handler({ at: 1, seq: 1, kind: "write", targetId: "p1" }, ctx);
+    expect(forwarded).toEqual(["request:svc", "write:svc"]);
+    expect(pipe.metrics()).toEqual({ forwarded: 2 });
   });
 });

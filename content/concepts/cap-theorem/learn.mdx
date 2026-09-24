@@ -1,0 +1,15 @@
+# CAP Theorem
+
+When the network partitions, a distributed store chooses: refuse requests (consistency) or answer from stale copies (availability). It cannot do both — that forced choice is the entire theorem.
+
+## What the partition shows
+
+Mid-run the replica link cuts for two seconds. The CP side fails reads and writes fast rather than risk staleness: zero stale, a wall of fast errors. The AP side keeps answering while staleness climbs, then heals and catches up. Same partition, opposite bills.
+
+## The failure mode to remember
+
+Assuming the choice away: async replication chosen for speed becomes an availability choice the first time the network splits. If reads must never go back in time, say CP up front and pay the error budget during partitions.
+
+## Interview line
+
+"Partitions happen, so pick your letter: CP fails rather than lies, AP answers possibly stale. Name the choice and its bill before the whiteboard fills."

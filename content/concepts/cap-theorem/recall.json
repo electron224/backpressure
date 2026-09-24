@@ -1,0 +1,6 @@
+[
+  { "id": "cap-r1", "q": "What choice does a partition force?", "a": "Refuse requests (consistency) or answer possibly stale (availability): never both." },
+  { "id": "cap-r2", "q": "What does each side's bill look like?", "a": "CP shows fast errors with zero stale; AP shows climbing staleness that heals on catch-up." },
+  { "id": "cap-r3", "q": "Why is async replication already an availability choice?", "a": "Its speed comes from answering without replica ack, which is exactly what AP does when split." },
+  { "id": "cap-r4", "q": "What must you state up front in an interview?", "a": "Which letter you pick and its bill during partitions, before designing anything else." }
+]

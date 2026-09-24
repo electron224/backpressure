@@ -16,6 +16,7 @@ import { labPreset as cachingStrategies } from "../../../content/concepts/cachin
 import { labPreset as evictionPolicies } from "../../../content/concepts/eviction-policies/lab";
 import { labPreset as replication } from "../../../content/concepts/replication/lab";
 import { labPreset as sharding } from "../../../content/concepts/sharding/lab";
+import { labPreset as capTheorem } from "../../../content/concepts/cap-theorem/lab";
 import { labPreset as consistentHashing } from "../../../content/concepts/consistent-hashing/lab";
 import { labPreset as sqlVsNosql } from "../../../content/concepts/sql-vs-nosql/lab";
 import { labPreset as indexing } from "../../../content/concepts/indexing/lab";
@@ -35,6 +36,7 @@ const presets: Record<string, unknown> = {
   "eviction-policies": evictionPolicies,
   replication,
   sharding,
+  "cap-theorem": capTheorem,
   "consistent-hashing": consistentHashing,
   "sql-vs-nosql": sqlVsNosql,
   indexing,

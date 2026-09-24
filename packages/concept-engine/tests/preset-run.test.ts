@@ -289,3 +289,37 @@ describe("database wiring", () => {
     expect(() => runPreset(preset, { rps: 80, mode: "eventual-ish" })).toThrow(/unknown replication mode/i);
   });
 });
+
+const shardChain = {
+  id: "sh",
+  topology: {
+    nodes: [
+      { id: "router", kind: "shard-router", config: {} },
+      { id: "s0", kind: "service", config: { serviceMs: 20, concurrency: 2, queueLimit: 50 } },
+      { id: "s1", kind: "service", config: { serviceMs: 20, concurrency: 2, queueLimit: 50 } },
+    ],
+    edges: [
+      { from: "router", to: "s0" },
+      { from: "router", to: "s1" },
+    ],
+  },
+  controls: [],
+  metrics: ["p99"],
+  challenges: [{ id: "s1", text: "Shard", verdict: "slo.p99" }],
+} as const;
+
+describe("shard-router distributor", () => {
+  it("routes by key and stays clean unskewed", () => {
+    const preset = LabPresetSchema.parse(shardChain);
+    const result = runPreset(preset, { rps: 80 });
+    expect(result.verdict).toBe("PASS");
+    expect(result.narration).toContain("shards:");
+  });
+
+  it("kill on router fails all-down", () => {
+    const preset = LabPresetSchema.parse(shardChain);
+    const result = runPreset(preset, { rps: 80 }, { dropBackend: "router" });
+    expect(result.verdict).toBe("FAIL");
+    expect(result.narration).toContain("all backends down");
+  });
+});

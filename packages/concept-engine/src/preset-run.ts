@@ -1,7 +1,7 @@
 // packages/concept-engine/src/preset-run.ts
 import { compile, run } from "@backpressure/sim-core";
 import type { EngineContext, HandlerFn } from "@backpressure/sim-core";
-import { createLoadBalancer, createCache, createDatabase, createRateLimiter, createService } from "@backpressure/sim-components";
+import { createLoadBalancer, createCache, createDatabase, createRateLimiter, createService, createShardRouter } from "@backpressure/sim-components";
 import type { LabPreset, PresetValues, Topology } from "./schema.js";
 
 export const DEFAULT_SEED = 7;
@@ -181,6 +181,7 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
   const topology = preset.topology;
 
   const lbNode = topology.nodes.find((n) => n.kind === "lb");
+  const routerNode = topology.nodes.find((n) => n.kind === "shard-router");
   // Database nodes are service-like terminals: they serve reads and writes
   // directly and participate in backend drop semantics.
   const serviceIds = topology.nodes
@@ -193,7 +194,10 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
   if (roots.length !== 1) {
     throw new Error(`preset '${preset.id}': expected exactly 1 entry node, found ${roots.length}`);
   }
-  if (opts?.dropBackend !== undefined && limiterNodes.some((n) => n.id === opts.dropBackend)) {
+  if (
+    opts?.dropBackend !== undefined &&
+    (limiterNodes.some((n) => n.id === opts.dropBackend) || routerNode?.id === opts.dropBackend)
+  ) {
     return { p99: 0, verdict: "FAIL", narration: `${preset.id}: all backends down — every request fails`, rejected: 0 };
   }
   // Dropped cache = cold restart, which matches the fresh-run state:
@@ -210,8 +214,11 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
     }
     chainTargets.set(chain.id, targets[0]);
   }
-  let backends = lbNode
-    ? topology.edges.filter((e) => e.from === lbNode.id).map((e) => e.to)
+  // Distributor is the lb or, failing that, the shard router. Backends
+  // come from its edges in either case.
+  const distributor = lbNode ?? routerNode;
+  let backends = distributor
+    ? topology.edges.filter((e) => e.from === distributor.id).map((e) => e.to)
     : [...serviceIds];
   if (effectiveDrop !== undefined) {
     backends = backends.filter((b) => b !== effectiveDrop);
@@ -219,8 +226,8 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
   if (backends.length === 0) {
     return { p99: 0, verdict: "FAIL", narration: `${preset.id}: all backends down — every request fails`, rejected: 0 };
   }
-  if (!lbNode && backends.length > 1) {
-    throw new Error(`preset '${preset.id}': multiple services without an lb node are unsupported`);
+  if (!distributor && backends.length > 1) {
+    throw new Error(`preset '${preset.id}': multiple services without a distributor are unsupported`);
   }
 
   const rpsRaw: unknown = values["rps"];
@@ -243,14 +250,16 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
   const graph = compile({
     nodes: [
       ...(lbNode ? [{ id: lbNode.id, kind: "lb", config: {} }] : []),
+      ...(routerNode ? [{ id: routerNode.id, kind: "shard-router", config: {} }] : []),
       ...chainNodes.map((n) => ({ id: n.id, kind: n.kind, config: {} })),
       ...backends.map((b) => ({ id: b, kind: nodeKind(b), config: {} })),
     ],
     edges: [
       ...[...chainTargets.entries()].map(([from, to]) => ({ from, to })),
-      ...(lbNode ? backends.map((b) => ({ from: lbNode.id, to: b })) : []),
+      ...(distributor ? backends.map((b) => ({ from: distributor.id, to: b })) : []),
     ],
   });
+  const router = routerNode ? createShardRouter(routerNode.id, backends) : null;
   const services = new Map(
     backends
       .filter((b) => nodeKind(b) !== "database")
@@ -291,6 +300,9 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
     : null;
 
   const handlers = new Map<string, HandlerFn>();
+  if (routerNode && router !== null) {
+    handlers.set(routerNode.id, router.handler);
+  }
   if (lbNode) {
     if (strategy === "sticky") {
       const pinned = backends[0];
@@ -357,7 +369,7 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
   const p99 = result.verdicts.find((v) => v.id === "slo.p99")?.observed ?? 0;
   const passed = result.verdicts.some((v) => v.id === "slo.p99" && v.passed);
   const rejected = result.metrics.reduce((sum, point) => sum + point.errors, 0);
-  const origin = lb !== null ? lb.narrate() : "direct";
+  const origin = lb !== null ? lb.narrate() : router !== null ? router.narrate() : "direct";
   const narration = [
     origin,
     ...[...limiters.values()].map((l) => l.narrate()),

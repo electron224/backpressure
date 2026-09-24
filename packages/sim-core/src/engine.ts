@@ -130,6 +130,8 @@ export function run(opts: RunOpts): RunResult {
     return true;
   });
   const entry = roots[0] ?? opts.graph.order[0];
+  let prevId = -1;
+  let prevKey: number | undefined;
   for (let i = 0; i < arrivals; i += 1) {
     at += rng.nextExponential(meanGap);
     if (at > opts.traffic.durationMs) break;
@@ -141,12 +143,25 @@ export function run(opts: RunOpts): RunResult {
     // stays { id } and legacy logs are untouched.
     const alpha = opts.traffic.keyAlpha;
     const space = opts.traffic.keySpace;
+    // Retries resend the previous arrival (same id): short-circuited when
+    // off so legacy streams stay byte-identical.
+    const retry = opts.traffic.retryRatio ?? 0;
     if (entry !== undefined) {
       if (alpha !== undefined && space !== undefined) {
         if (zipfTable === null) zipfTable = buildZipfTable(space, alpha);
-        queue.push(at, kind, entry, { id: i, key: sampleZipf(rng, zipfTable) });
+        const key = sampleZipf(rng, zipfTable);
+        queue.push(at, kind, entry, { id: i, key });
+        if (retry > 0 && rng.next() < retry && prevId >= 0) {
+          queue.push(at + 50 + rng.next() * 150, kind, entry, { id: prevId, key: prevKey });
+        }
+        prevId = i;
+        prevKey = key;
       } else {
         queue.push(at, kind, entry, { id: i });
+        if (retry > 0 && rng.next() < retry && prevId >= 0) {
+          queue.push(at + 50 + rng.next() * 150, kind, entry, { id: prevId });
+        }
+        prevId = i;
       }
     }
   }

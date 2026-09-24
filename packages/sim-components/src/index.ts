@@ -11,3 +11,5 @@ export type { CacheOpts, WritePolicy } from "./cache.js";
 export { createDatabase } from "./database.js";
 export type { DatabaseOpts, ReplicationMode, WriteConcern } from "./database.js";
 export { createShardRouter } from "./shard-router.js";
+export { createDedup } from "./dedup.js";
+export type { DedupOpts } from "./dedup.js";

@@ -27,6 +27,7 @@ export interface TrafficProfile {
   keyAlpha?: number;
   keySpace?: number;
   writeRatio?: number;
+  retryRatio?: number;
 }
 
 export type FaultKind = "kill-node" | "traffic-spike";

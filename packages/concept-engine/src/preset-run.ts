@@ -314,12 +314,14 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
     opts?.dropBackend !== undefined &&
     (limiterNodes.some((n) => n.id === opts.dropBackend) ||
       dedupNodes.some((n) => n.id === opts.dropBackend) ||
-      queueNodes.some((n) => n.id === opts.dropBackend) ||
       fanoutNodes.some((n) => n.id === opts.dropBackend) ||
       routerNode?.id === opts.dropBackend)
   ) {
     return { p99: 0, verdict: "FAIL", narration: `${preset.id}: all backends down — every request fails`, rejected: 0 };
   }
+  // Dropped queues vanish like pipes: producers keep sending into the
+  // void while downstream starves. Entry-point kills (limiter, dedup,
+  // router) stay total outages via the rule above.
   // Dropped pipes vanish mid-chain: upstream steps complete while the rest
   // of the workflow never runs. That dangling partial completion is the
   // saga problem statement, so pipes stay out of the all-down rule.

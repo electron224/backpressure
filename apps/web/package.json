@@ -8,9 +8,12 @@
     "build": "next build"
   },
   "dependencies": {
+    "@backpressure/canvas": "workspace:^",
+    "@backpressure/coach": "workspace:^",
     "@backpressure/concept-engine": "workspace:*",
     "@backpressure/sim-components": "workspace:*",
     "@backpressure/sim-core": "workspace:*",
+    "@xyflow/react": "12",
     "next": "14.2.25",
     "next-mdx-remote": "5.0.0",
     "react": "18.3.1",

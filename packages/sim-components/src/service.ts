@@ -33,7 +33,8 @@ export function createService(id: string, opts: ServiceOpts): {
   }
 
   function handler(event: SimEvent, ctx: EngineContext): void {
-    if (event.kind === "request") {
+    // Reads and writes share the service path; admission lives upstream.
+    if (event.kind === "request" || event.kind === "write") {
       if (inflight < opts.concurrency) {
         startOne(ctx, event.at);
       } else if (waiting.length < opts.queueLimit) {

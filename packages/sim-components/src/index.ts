@@ -7,4 +7,4 @@ export { describeClient } from "./client.js";
 export { createRateLimiter } from "./rate-limiter.js";
 export type { LimiterAlgorithm, RateLimiterOpts } from "./rate-limiter.js";
 export { createCache } from "./cache.js";
-export type { CacheOpts } from "./cache.js";
+export type { CacheOpts, WritePolicy } from "./cache.js";

@@ -1,0 +1,4 @@
+[
+  { "id": "sn.1", "text": "At 50% writes, compare p99: constraint checks compound", "verdict": "slo.p99", "apply": { "set": { "rps": 80, "writePct": 50 } } },
+  { "id": "sn.2", "text": "Drop writes to 0% and watch the gap narrow to reads only", "verdict": "slo.p99", "apply": { "set": { "rps": 80, "writePct": 0 } } }
+]

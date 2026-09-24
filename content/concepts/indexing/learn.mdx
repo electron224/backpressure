@@ -1,0 +1,15 @@
+# Indexing
+
+An index turns a scan into a lookup: reads fall from 150ms to 5ms. The bill arrives on writes, which now maintain the index too.
+
+## What the numbers show
+
+Read-heavy at 5% writes, the indexed store answers in single digits while the heap scans at 150ms — and past ~50 RPS the heap saturates its eight slots entirely while indexed barely notices. Writes still tax the index, but the read gap dominates until write share grows large.
+
+## The failure mode to remember
+
+Index-everything: each new index taxes every write while helping one query. Unused indexes are pure write latency with no read benefit — audit them like dead code.
+
+## Interview line
+
+"Index the read path you measure, count the cost on the write path you pay. No free lookups."

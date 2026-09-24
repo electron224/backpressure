@@ -1,0 +1,5 @@
+[
+  { "id": "ix-r1", "q": "What does an index buy and what does it cost?", "a": "Reads fall from scan to lookup cost; every write pays index maintenance." },
+  { "id": "ix-r2", "q": "When does the indexed advantage narrow?", "a": "As write share grows: maintenance tax compounds while scan cost stays flat per read." },
+  { "id": "ix-r3", "q": "What is an unused index?", "a": "Pure write latency with no read benefit: audit indexes like dead code." }
+]

@@ -1,0 +1,15 @@
+# SQL vs NoSQL
+
+SQL buys relations, joins, and transactions with constraint checks on every write. NoSQL buys single-digit-millisecond reads and writes by dropping them. The workload decides, not the logo.
+
+## What the numbers show
+
+At 50% writes the SQL-shaped store (15ms reads, 45ms writes) runs several times the p99 of the kv-shaped store (10ms both ways) — p99 follows whatever class exceeds 1% of traffic. With pure reads the gap narrows to 15 vs 10. Fit the store to the mix, not the hype.
+
+## The failure mode to remember
+
+NoSQL without a query plan becomes application-side joins: N+1 reads that no benchmark warned about. SQL without schema discipline becomes migration gridlock. Each offloads complexity somewhere — name where yours went.
+
+## Interview line
+
+"Read-heavy with relations: SQL. Write-heavy kv: NoSQL. Ask the read:write ratio first — at 5% writes the difference barely registers."

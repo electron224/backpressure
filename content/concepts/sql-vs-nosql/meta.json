@@ -1,0 +1,8 @@
+{
+  "id": "sql-vs-nosql",
+  "title": "SQL vs NoSQL",
+  "prerequisites": ["caching-strategies"],
+  "difficulty": "intermediate",
+  "estimated_minutes": 15,
+  "tags": ["data", "tier-3"]
+}

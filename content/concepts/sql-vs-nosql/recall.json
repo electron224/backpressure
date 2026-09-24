@@ -1,0 +1,5 @@
+[
+  { "id": "sn-r1", "q": "Why does SQL pull ahead in p99 only as write share grows?", "a": "Constraint checks make each write cost more, so write-heavy mixes compound the gap while read-heavy mixes hide it." },
+  { "id": "sn-r2", "q": "What question do you ask before picking?", "a": "The read:write ratio: p99 follows whatever class exceeds 1% of traffic, so pure reads narrow the gap to 15 vs 10." },
+  { "id": "sn-r3", "q": "Where does NoSQL complexity go?", "a": "Into the application: joins and transactions become N+1 reads and sagas you now own." }
+]

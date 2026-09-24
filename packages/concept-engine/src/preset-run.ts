@@ -35,7 +35,7 @@ function resolvedServiceConfig(
   id: string,
   values: PresetValues,
   presetId: string,
-): { serviceMs: number; concurrency: number; queueLimit: number } {
+): { serviceMs: number; concurrency: number; queueLimit: number; readMs: number; writeMs: number } {
   const node = topology.nodes.find((n) => n.id === id);
   if (node === undefined) throw new Error(`preset '${presetId}': unknown node '${id}'`);
   const base: Record<string, unknown> = isRecord(node.config) ? { ...node.config } : {};
@@ -52,6 +52,8 @@ function resolvedServiceConfig(
     serviceMs: numberField(base, "serviceMs", 20),
     concurrency: numberField(base, "concurrency", 2),
     queueLimit: numberField(base, "queueLimit", 50),
+    readMs: numberField(base, "readMs", numberField(base, "serviceMs", 20)),
+    writeMs: numberField(base, "writeMs", numberField(base, "serviceMs", 20)),
   };
 }
 

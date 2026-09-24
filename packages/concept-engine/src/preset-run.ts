@@ -1,6 +1,6 @@
 // packages/concept-engine/src/preset-run.ts
 import { compile, run } from "@backpressure/sim-core";
-import type { HandlerFn } from "@backpressure/sim-core";
+import type { EngineContext, HandlerFn } from "@backpressure/sim-core";
 import { createLoadBalancer, createCache, createRateLimiter, createService } from "@backpressure/sim-components";
 import type { LabPreset, PresetValues, Topology } from "./schema.js";
 
@@ -184,11 +184,19 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
     }),
   );
 
-  // No strategy control on presets like SPOF (lb node, no strategy value):
-  // default a missing/invalid strategy to round-robin. Twins are identical
-  // there, so RR is correct; LB presets set strategy explicitly via control.
   const strategyRaw: unknown = values["strategy"];
   const strategy = strategyRaw === "least-connections" || strategyRaw === "sticky" ? strategyRaw : "round-robin";
+
+  // Breaker is opt-in per preset (values["breaker"] === "on"): existing
+  // presets without the control keep legacy numbers byte-identically.
+  const breakerOn = values["breaker"] === "on";
+  const lb = lbNode
+    ? createLoadBalancer({
+        strategy: strategy === "least-connections" ? "least-connections" : "round-robin",
+        backends,
+        ...(breakerOn ? { breaker: { failureThreshold: 3, cooldownMs: 2000 } } : {}),
+      })
+    : null;
 
   const handlers = new Map<string, HandlerFn>();
   if (lbNode) {
@@ -200,21 +208,40 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
         ctx.queue.push(event.at, "request", pinned, { arrival: event.at });
       });
     } else {
-      const lb = createLoadBalancer({
-        strategy: strategy === "least-connections" ? "least-connections" : "round-robin",
-        backends,
-      });
+      if (lb === null) throw new Error(`preset '${preset.id}': missing load balancer`);
+      const balancer = lb;
       handlers.set(lbNode.id, (event, ctx) => {
         if (event.kind !== "request") return;
-        const target = lb.pick((id) => {
-          const m = services.get(id)?.metrics();
-          return (m?.inflight ?? 0) + (m?.queueDepth ?? 0);
-        });
+        const target = balancer.pick(
+          (id) => {
+            const m = services.get(id)?.metrics();
+            return (m?.inflight ?? 0) + (m?.queueDepth ?? 0);
+          },
+          event.at,
+        );
         ctx.queue.push(event.at, "request", target, { arrival: event.at });
       });
     }
   }
-  for (const [id, svc] of services) handlers.set(id, svc.handler);
+  // Report service outcomes back to the balancer so an enabled breaker
+  // observes failures. The wrapper delegates everything else untouched.
+  for (const [id, svc] of services) {
+    if (lb !== null && breakerOn) {
+      const balancer = lb;
+      handlers.set(id, (event, ctx) => {
+        const reporting: EngineContext = {
+          ...ctx,
+          complete: (at, latencyMs, ok) => {
+            balancer.recordResult(id, ok, at);
+            ctx.complete(at, latencyMs, ok);
+          },
+        };
+        svc.handler(event, reporting);
+      });
+    } else {
+      handlers.set(id, svc.handler);
+    }
+  }
   for (const [id, lim] of limiters) handlers.set(id, lim.handler);
   for (const [id, cache] of caches) handlers.set(id, cache.handler);
 
@@ -222,7 +249,7 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
   const p99 = result.verdicts.find((v) => v.id === "slo.p99")?.observed ?? 0;
   const passed = result.verdicts.some((v) => v.id === "slo.p99" && v.passed);
   const rejected = result.metrics.reduce((sum, point) => sum + point.errors, 0);
-  const origin = lbNode ? `lb: backends=[${backends.join(",")}]` : "direct";
+  const origin = lb !== null ? lb.narrate() : "direct";
   const narration = [
     origin,
     ...[...limiters.values()].map((l) => l.narrate()),

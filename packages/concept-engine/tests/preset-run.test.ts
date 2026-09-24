@@ -200,3 +200,41 @@ describe("cache chain (edge -> origin, no lb)", () => {
     expect(killed.p99).toBe(fresh.p99);
   });
 });
+
+const hbChain = {
+  id: "hb",
+  topology: {
+    nodes: [
+      { id: "lb", kind: "lb", config: {} },
+      { id: "fast", kind: "service", config: { serviceMs: 20, concurrency: 4, queueLimit: 50 } },
+      { id: "flaky", kind: "service", config: { serviceMs: 150, concurrency: 1, queueLimit: 0 } },
+    ],
+    edges: [
+      { from: "lb", to: "fast" },
+      { from: "lb", to: "flaky" },
+    ],
+  },
+  controls: [],
+  metrics: ["p99"],
+  challenges: [{ id: "h1", text: "Eject", verdict: "slo.p99" }],
+} as const;
+
+describe("breaker opt-in", () => {
+  it("ejects the flaky backend and sheds less than without", () => {
+    const preset = LabPresetSchema.parse(hbChain);
+    const on = runPreset(preset, { strategy: "round-robin", rps: 150, breaker: "on" });
+    const off = runPreset(preset, { strategy: "round-robin", rps: 150, breaker: "off" });
+    // Ejection is proven behaviorally: with the breaker the flaky backend
+    // stops receiving traffic after 3 consecutive failures, so total
+    // rejects collapse while p99 holds. (End-state narration can't pin it:
+    // flapping half-open trials correctly re-close the circuit.)
+    expect(off.rejected).toBeGreaterThan(on.rejected * 2);
+    expect(on.verdict).toBe("PASS");
+  });
+
+  it("stays off without the opt-in (legacy numbers)", () => {
+    const preset = LabPresetSchema.parse(hbChain);
+    const result = runPreset(preset, { strategy: "round-robin", rps: 150 });
+    expect(result.narration).toContain("open=[]");
+  });
+});

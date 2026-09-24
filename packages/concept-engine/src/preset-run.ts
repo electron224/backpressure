@@ -365,17 +365,16 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
   }
 
   const nodeKind = (nid: string): string => topology.nodes.find((n) => n.id === nid)?.kind ?? "service";
+  // The sim graph mirrors the full topology minus a dropped backend, so
+  // services behind queues and chain steps all resolve handlers.
+  const removedNode = effectiveDrop;
   const graph = compile({
-    nodes: [
-      ...(lbNode ? [{ id: lbNode.id, kind: "lb", config: {} }] : []),
-      ...(routerNode ? [{ id: routerNode.id, kind: "shard-router", config: {} }] : []),
-      ...chainNodes.map((n) => ({ id: n.id, kind: n.kind, config: {} })),
-      ...backends.map((b) => ({ id: b, kind: nodeKind(b), config: {} })),
-    ],
-    edges: [
-      ...[...chainTargets.entries()].map(([from, to]) => ({ from, to })),
-      ...(distributor ? backends.map((b) => ({ from: distributor.id, to: b })) : []),
-    ],
+    nodes: topology.nodes
+      .filter((n) => n.id !== removedNode)
+      .map((n) => ({ id: n.id, kind: n.kind, config: {} })),
+    edges: topology.edges
+      .filter((e) => e.from !== removedNode && e.to !== removedNode)
+      .map((e) => ({ from: e.from, to: e.to })),
   });
   const router = routerNode ? createShardRouter(routerNode.id, backends, resolvedRouterConfig(topology, routerNode.id, values, preset.id)) : null;
   const fanoutNode = fanoutNodes[0];
@@ -389,14 +388,14 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
     }),
   );
   const services = new Map(
-    backends
-      .filter((b) => nodeKind(b) !== "database" && nodeKind(b) !== "queue")
-      .map((b) => [b, createService(b, resolvedServiceConfig(topology, b, values, preset.id))]),
+    topology.nodes
+      .filter((n) => n.kind === "service" && n.id !== removedNode)
+      .map((n) => [n.id, createService(n.id, resolvedServiceConfig(topology, n.id, values, preset.id))]),
   );
   const databases = new Map(
-    backends
-      .filter((b) => nodeKind(b) === "database")
-      .map((b) => [b, createDatabase(b, resolvedDbConfig(topology, b, values, preset.id))]),
+    topology.nodes
+      .filter((n) => n.kind === "database" && n.id !== removedNode)
+      .map((b) => [b.id, createDatabase(b.id, resolvedDbConfig(topology, b.id, values, preset.id))]),
   );
   const pipes = new Map(
     pipeNodes.map((n) => {
@@ -475,7 +474,9 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
   // Report service outcomes back to the balancer so an enabled breaker
   // observes failures. The wrapper delegates everything else untouched.
   for (const [id, svc] of services) {
-    if (lb !== null && breakerOn) {
+    // Only LB-routed backends report: services behind queues have no
+    // breaker entry and would throw unknown-backend.
+    if (lb !== null && breakerOn && backends.includes(id)) {
       const balancer = lb;
       handlers.set(id, (event, ctx) => {
         const reporting: EngineContext = {

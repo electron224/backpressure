@@ -104,7 +104,11 @@ export function run(opts: RunOpts): RunResult {
   for (let i = 0; i < arrivals; i += 1) {
     at += rng.nextExponential(meanGap);
     if (at > opts.traffic.durationMs) break;
-    if (entry !== undefined) queue.push(at, "request", entry, { id: i });
+    // Short-circuit keeps the RNG stream identical when writes are off,
+    // so legacy presets stay byte-identical.
+    const ratio = opts.traffic.writeRatio ?? 0;
+    const kind = ratio > 0 && rng.next() < ratio ? "write" : "request";
+    if (entry !== undefined) queue.push(at, kind, entry, { id: i });
   }
 
   const endAt = opts.traffic.durationMs;

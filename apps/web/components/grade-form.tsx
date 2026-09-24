@@ -3,8 +3,8 @@
 
 import { useState } from "react";
 import { compileFlow } from "@backpressure/canvas";
-import { gradeWith } from "@backpressure/coach";
-import type { GradeDimension, GradeReport, ScenarioDef } from "@backpressure/coach";
+import { gradeWith } from "@backpressure/coach/grade-core";
+import type { GradeDimension, GradeReport, ScenarioDef } from "@backpressure/coach/grade-core";
 
 interface CanvasNode {
   id: string;

@@ -3,6 +3,10 @@
   "version": "0.0.0",
   "type": "module",
   "main": "./src/index.ts",
-  "exports": { ".": "./src/index.ts" },
+  "exports": {
+    ".": "./src/index.ts",
+    "./checks": "./src/checks.ts",
+    "./grade-core": "./src/grade-core.ts"
+  },
   "dependencies": { "@backpressure/concept-engine": "workspace:*" }
 }

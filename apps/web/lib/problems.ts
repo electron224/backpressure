@@ -1,7 +1,7 @@
 // apps/web/lib/problems.ts
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { GradeDimension, ScenarioDef } from "@backpressure/coach";
+import type { GradeDimension, ScenarioDef } from "@backpressure/coach/grade-core";
 
 const PROBLEMS_DIR = join(process.cwd(), "..", "..", "content", "problems");
 

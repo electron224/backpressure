@@ -14,8 +14,8 @@ import type { Connection, Edge, EdgeChange, Node, NodeChange } from "@xyflow/rea
 import "@xyflow/react/dist/style.css";
 import { compileFlow, paletteKinds } from "@backpressure/canvas";
 import { runPreset } from "@backpressure/concept-engine";
-import { runChecks } from "@backpressure/coach";
-import type { StructuralFinding } from "@backpressure/coach";
+import { runChecks } from "@backpressure/coach/checks";
+import type { StructuralFinding } from "@backpressure/coach/checks";
 
 interface RunReport {
   rows: { label: string; p99: number; verdict: string; narration: string }[];

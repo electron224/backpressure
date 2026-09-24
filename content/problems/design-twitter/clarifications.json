@@ -1,0 +1,6 @@
+[
+  { "q": "What is the read:write ratio?", "a": "Roughly 100:1 — timeline reads dominate posting." },
+  { "q": "Do we need realtime delivery?", "a": "Near-realtime is fine; seconds of delay are acceptable, minutes are not." },
+  { "q": "How do celebrity accounts change the design?", "a": "That is the deep-dive question: a 10M-follower post breaks naive fan-out-on-write. Say how you'd handle it." },
+  { "q": "What scale should we target?", "a": "See scale.json — and defend what happens at 10x." }
+]

@@ -26,3 +26,17 @@ describe("gradeSubmission", () => {
     expect(report.llmNote).toContain("ANTHROPIC_API_KEY");
   });
 });
+
+describe("design-twitter references", () => {
+  it("v1 naive fails SPOF, v2 passes deterministic", async () => {
+    const { v1Naive } = await import("../../../content/problems/design-twitter/reference/v1-naive.js");
+    const { v2Scaled } = await import("../../../content/problems/design-twitter/reference/v2-scaled.js");
+    const { LabPresetSchema } = await import("@backpressure/concept-engine");
+    const v1 = gradeSubmission(LabPresetSchema.parse(v1Naive).topology, "content/problems/design-twitter");
+    expect(v1.criteria.find((c) => c.id === "avail.no-spof")?.earned).toBe(0);
+    const v2 = gradeSubmission(LabPresetSchema.parse(v2Scaled).topology, "content/problems/design-twitter");
+    for (const criterion of v2.criteria) {
+      expect(criterion.earned).toBe(criterion.points);
+    }
+  });
+});

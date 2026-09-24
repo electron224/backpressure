@@ -1,0 +1,8 @@
+{
+  "id": "design-twitter",
+  "title": "Design Twitter",
+  "difficulty": "advanced",
+  "target_level": "SDE3",
+  "duration_minutes": 45,
+  "concepts_required": ["fan-out-on-write-vs-read", "caching-strategies", "sharding", "load-balancing"]
+}

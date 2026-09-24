@@ -1,0 +1,7 @@
+{
+  "dau": 200000000,
+  "posts_per_day": 500000000,
+  "read_write_ratio": "100:1",
+  "celebrity_followers": 10000000,
+  "median_followers": 200
+}

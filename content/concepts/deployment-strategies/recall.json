@@ -1,0 +1,5 @@
+[
+  { "id": "dp-r1", "q": "What does a canary bound?", "a": "Blast radius: a faulty version fails its small share instead of the fleet." },
+  { "id": "dp-r2", "q": "What makes a canary useless?", "a": "No per-version error alerts: traffic splits but nobody reads the signals." },
+  { "id": "dp-r3", "q": "Why is rollback a weight flip?", "a": "Routing weights decide shares, so reverting needs no redeploy." }
+]

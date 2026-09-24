@@ -1,0 +1,15 @@
+# SLOs and Error Budgets
+
+An SLO promises a number: 99.9% of requests fast and successful. The error budget is the allowed remainder — 0.1% to spend on deploys, experiments, and bad days.
+
+## What the overload shows
+
+A limiter ahead of a service at 150 RPS against a 100 RPS limit: a third of requests 429 while the served stay clean. Against a 99.9% SLO that burns the monthly budget in minutes. Back the traffic under the limit and the budget stops bleeding.
+
+## The failure mode to remember
+
+Budget blindness: shipping through a blown budget because "errors look stable." Stable red is still red — freeze launches until the budget recovers.
+
+## Interview line
+
+"SLO states the promise, budget prices the risk. Spend it on velocity, halt on empty."

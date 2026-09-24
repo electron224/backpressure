@@ -1,0 +1,8 @@
+{
+  "id": "observability-golden-signals",
+  "title": "Observability: Golden Signals",
+  "prerequisites": ["load-balancing"],
+  "difficulty": "beginner",
+  "estimated_minutes": 15,
+  "tags": ["operations", "tier-6"]
+}

@@ -1,0 +1,5 @@
+[
+  { "id": "ob-r1", "q": "What are the four golden signals?", "a": "Latency, traffic, errors, saturation: together they narrate nearly every incident." },
+  { "id": "ob-r2", "q": "Why does p99 alone mislead?", "a": "Failures carry no latency, so error storms hide; pair it with errors and saturation." },
+  { "id": "ob-r3", "q": "Which signal moves first?", "a": "Saturation: queues fill before latency climbs and errors start." }
+]

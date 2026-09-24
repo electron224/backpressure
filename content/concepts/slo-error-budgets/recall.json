@@ -1,0 +1,5 @@
+[
+  { "id": "slo-r1", "q": "What is an error budget?", "a": "The allowed remainder of an SLO: 0.1% for a 99.9% promise, spendable on risk." },
+  { "id": "slo-r2", "q": "What do you do on an empty budget?", "a": "Freeze launches and experiments until it recovers." },
+  { "id": "slo-r3", "q": "Why can served p99 look fine while the budget burns?", "a": "The limiter keeps admitted requests clean; the burn is in rejected share, not latency." }
+]

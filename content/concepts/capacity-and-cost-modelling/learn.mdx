@@ -1,0 +1,15 @@
+# Capacity and Cost Modelling
+
+Every architecture is a bill and a ceiling. Capacity says what load it holds; cost says what the hold runs per month. Design both or discover both in production.
+
+## What the comparison shows
+
+Same 200 RPS against two shapes: four thin replicas behind a balancer versus one fat box. Both pass — then read the cost lines. Nodes, sizes, and request volume price differently, and the cheaper shape depends on the traffic you actually run.
+
+## The failure mode to remember
+
+Priced-for-peak, idle-at-night: static capacity bills the maximum around the clock. Model the traffic curve, not the peak dot — or autoscale the gap.
+
+## Interview line
+
+"Capacity per shape, dollars per month, both from the same run. Cheapest passing design wins the whiteboard."

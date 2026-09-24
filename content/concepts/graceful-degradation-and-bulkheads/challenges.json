@@ -1,0 +1,3 @@
+[
+  { "id": "gd.1", "text": "Kill flaky at 150: degraded serving, survivor clean", "verdict": "slo.p99", "apply": { "set": { "rps": 150, "breaker": "on" } } }
+]

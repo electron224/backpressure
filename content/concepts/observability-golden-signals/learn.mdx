@@ -1,0 +1,15 @@
+# Observability: Golden Signals
+
+Latency, traffic, errors, saturation: four numbers that tell you nearly everything. Every lab here already emits them — this concept teaches reading them together.
+
+## What the fault shows
+
+Steady state first: p99 low, throughput matching offered load, zero errors, queues empty. Inject chaos and watch the panel move as one story — errors spike exactly where saturation starts, latency follows queue depth, throughput sags by the dropped share.
+
+## The failure mode to remember
+
+Single-signal blindness: p99 alone hides error storms (failures don't count latencies), throughput alone hides saturation (served count holds while queues explode). Read all four or misread the incident.
+
+## Interview line
+
+"Latency, traffic, errors, saturation — every incident narrates through all four. Alert on saturation first; it precedes the other three."

@@ -1,0 +1,5 @@
+[
+  { "id": "cc-r1", "q": "What prices a design per month?", "a": "Nodes and sizes plus request volume: capacity and cost come from the same run." },
+  { "id": "cc-r2", "q": "What is priced-for-peak waste?", "a": "Static capacity billing the maximum around the clock while traffic idles at night." },
+  { "id": "cc-r3", "q": "How do you pick between passing shapes?", "a": "Cheapest passing design wins: compare cost lines at the traffic you run." }
+]

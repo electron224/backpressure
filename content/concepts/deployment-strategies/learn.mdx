@@ -1,0 +1,15 @@
+# Deployment Strategies
+
+Every deploy is a bet. Blue-green bets the whole fleet at once with instant rollback; canary bets a sliver first and watches errors before widening.
+
+## What the weights show
+
+Nine-to-one split against a faulty v2: errors hold near a tenth while v1 carries on. Full cutover to the same v2 fails everything. The canary turns a fleet-wide outage into a measured tenth — with rollback one weight flip away.
+
+## The failure mode to remember
+
+Unwatched canary: traffic splits but nobody reads errors, so the bad version widens on schedule. A canary without error alerts is a slow-motion full deploy.
+
+## Interview line
+
+"Canary the blast radius, watch errors per version, widen on evidence. Rollback is a weight flip, not a redeploy."

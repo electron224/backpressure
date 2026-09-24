@@ -1,0 +1,8 @@
+{
+  "id": "slo-error-budgets",
+  "title": "SLOs and Error Budgets",
+  "prerequisites": ["observability-golden-signals"],
+  "difficulty": "beginner",
+  "estimated_minutes": 15,
+  "tags": ["operations", "tier-6"]
+}

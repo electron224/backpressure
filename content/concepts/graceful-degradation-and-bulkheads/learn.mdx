@@ -1,0 +1,15 @@
+# Graceful Degradation and Bulkheads
+
+Ships have bulkheads so one breach doesn't sink all compartments. Services need the same: shed excess at the edge, isolate the sick leg, and keep serving degraded instead of dying whole.
+
+## What the composition shows
+
+Limiter ahead of a breaker-guarded pool with one flaky twin. Kill the twin: the breaker ejects it, the limiter sheds the excess, and the survivor serves clean — degraded capacity, zero outage. Every mechanism here has its own concept; this is them playing together.
+
+## The failure mode to remember
+
+All-or-nothing: no shedding plus no isolation means one sick backend takes the fleet. Degradation is a designed state with its own alerts, not luck.
+
+## Interview line
+
+"Shed at the edge, isolate the sick, serve degraded. Name the degraded state before the incident names it for you."

@@ -1,0 +1,5 @@
+[
+  { "id": "gd-r1", "q": "What do bulkheads buy?", "a": "Compartmentalized failure: one sick leg degrades capacity instead of sinking the fleet." },
+  { "id": "gd-r2", "q": "What are the three moves in this lab?", "a": "Shed excess at the limiter, eject the sick leg with the breaker, serve degraded on survivors." },
+  { "id": "gd-r3", "q": "When is degradation designed vs luck?", "a": "When it has its own alerts, thresholds, and drills — otherwise it is just a smaller outage." }
+]

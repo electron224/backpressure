@@ -22,6 +22,11 @@ import { labPreset as quorumsAndNRW } from "../../../content/concepts/quorums-an
 import { labPreset as idempotencyAndExactlyOnce } from "../../../content/concepts/idempotency-and-exactly-once/lab";
 import { labPreset as distributedTransactionsAndSaga } from "../../../content/concepts/distributed-transactions-and-saga/lab";
 import { labPreset as leaderElectionIntuition } from "../../../content/concepts/leader-election-intuition/lab";
+import { labPreset as observabilityGoldenSignals } from "../../../content/concepts/observability-golden-signals/lab";
+import { labPreset as sloErrorBudgets } from "../../../content/concepts/slo-error-budgets/lab";
+import { labPreset as gracefulDegradationAndBulkheads } from "../../../content/concepts/graceful-degradation-and-bulkheads/lab";
+import { labPreset as deploymentStrategies } from "../../../content/concepts/deployment-strategies/lab";
+import { labPreset as capacityAndCostModelling } from "../../../content/concepts/capacity-and-cost-modelling/lab";
 import { labPreset as messageQueuesVsStreams } from "../../../content/concepts/message-queues-vs-streams/lab";
 import { labPreset as pubSub } from "../../../content/concepts/pub-sub/lab";
 import { labPreset as backpressureAndDlq } from "../../../content/concepts/backpressure-and-dlq/lab";
@@ -54,6 +59,11 @@ const presets: Record<string, unknown> = {
   "idempotency-and-exactly-once": idempotencyAndExactlyOnce,
   "distributed-transactions-and-saga": distributedTransactionsAndSaga,
   "leader-election-intuition": leaderElectionIntuition,
+  "observability-golden-signals": observabilityGoldenSignals,
+  "slo-error-budgets": sloErrorBudgets,
+  "graceful-degradation-and-bulkheads": gracefulDegradationAndBulkheads,
+  "deployment-strategies": deploymentStrategies,
+  "capacity-and-cost-modelling": capacityAndCostModelling,
   "message-queues-vs-streams": messageQueuesVsStreams,
   "pub-sub": pubSub,
   "backpressure-and-dlq": backpressureAndDlq,

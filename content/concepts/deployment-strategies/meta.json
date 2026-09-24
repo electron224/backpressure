@@ -1,0 +1,8 @@
+{
+  "id": "deployment-strategies",
+  "title": "Deployment Strategies",
+  "prerequisites": ["observability-golden-signals"],
+  "difficulty": "intermediate",
+  "estimated_minutes": 15,
+  "tags": ["operations", "tier-6"]
+}

@@ -323,3 +323,39 @@ describe("shard-router distributor", () => {
     expect(result.narration).toContain("all backends down");
   });
 });
+
+const dedupChain = {
+  id: "idem",
+  topology: {
+    nodes: [
+      { id: "dd", kind: "dedup", config: { windowMs: 5000 } },
+      { id: "api", kind: "service", config: { serviceMs: 20, concurrency: 4, queueLimit: 200 } },
+    ],
+    edges: [{ from: "dd", to: "api" }],
+  },
+  controls: [],
+  metrics: ["p99"],
+  challenges: [{ id: "i1", text: "Dedup", verdict: "slo.p99" }],
+} as const;
+
+describe("dedup chain", () => {
+  it("absorbs retries without double execution", () => {
+    const preset = LabPresetSchema.parse(dedupChain);
+    const plain = runPreset(preset, { rps: 80, retryPct: 0 });
+    const storm = runPreset(preset, { rps: 80, retryPct: 30 });
+    expect(storm.narration).toContain("duplicates=");
+    expect(plain.narration).toContain("duplicates=0");
+    const servedOf = (narr: string): number => {
+      const match = narr.match(/api: served=(\d+)/);
+      return Number(match?.[1] ?? "NaN");
+    };
+    expect(servedOf(storm.narration)).toBeLessThan(servedOf(plain.narration) * 1.1);
+  });
+
+  it("kill on dedup fails all-down", () => {
+    const preset = LabPresetSchema.parse(dedupChain);
+    const result = runPreset(preset, { rps: 80 }, { dropBackend: "dd" });
+    expect(result.verdict).toBe("FAIL");
+    expect(result.narration).toContain("all backends down");
+  });
+});

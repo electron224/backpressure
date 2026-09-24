@@ -1,7 +1,7 @@
 // packages/concept-engine/src/preset-run.ts
 import { compile, run } from "@backpressure/sim-core";
 import type { EngineContext, HandlerFn } from "@backpressure/sim-core";
-import { createLoadBalancer, createCache, createDatabase, createRateLimiter, createService, createShardRouter } from "@backpressure/sim-components";
+import { createLoadBalancer, createCache, createDatabase, createDedup, createRateLimiter, createService, createShardRouter } from "@backpressure/sim-components";
 import type { LabPreset, PresetValues, Topology } from "./schema.js";
 
 export const DEFAULT_SEED = 7;
@@ -215,6 +215,27 @@ function resolvedRouterConfig(
   };
 }
 
+function resolvedDedupConfig(
+  topology: Topology,
+  id: string,
+  values: PresetValues,
+  presetId: string,
+): { windowMs: number } {
+  const node = topology.nodes.find((n) => n.id === id);
+  if (node === undefined) throw new Error(`preset '${presetId}': unknown node '${id}'`);
+  const base: Record<string, unknown> = isRecord(node.config) ? { ...node.config } : {};
+  const merged: Record<string, unknown> = { ...base };
+  for (const [key, value] of Object.entries(values)) {
+    const dot = key.indexOf(".");
+    if (dot === -1 || key.slice(0, dot) !== id) continue;
+    if (typeof value !== "number" || !Number.isFinite(value)) {
+      throw new Error(`preset '${presetId}': override '${key}' must be a finite number`);
+    }
+    merged[key.slice(dot + 1)] = value;
+  }
+  return { windowMs: numberField(merged, "windowMs", 5000) };
+}
+
 function cacheKeySpace(topology: Topology, values: PresetValues): number {
   const node = topology.nodes.find((n) => n.kind === "cache" || n.kind === "database");
   if (node === undefined) return 100;
@@ -240,14 +261,17 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
     .map((n) => n.id);
   const limiterNodes = topology.nodes.filter((n) => n.kind === "rate-limiter");
   const cacheNodes = topology.nodes.filter((n) => n.kind === "cache");
-  const chainNodes = [...limiterNodes, ...cacheNodes];
+  const dedupNodes = topology.nodes.filter((n) => n.kind === "dedup");
+  const chainNodes = [...limiterNodes, ...cacheNodes, ...dedupNodes];
   const roots = topology.nodes.filter((n) => !topology.edges.some((e) => e.to === n.id));
   if (roots.length !== 1) {
     throw new Error(`preset '${preset.id}': expected exactly 1 entry node, found ${roots.length}`);
   }
   if (
     opts?.dropBackend !== undefined &&
-    (limiterNodes.some((n) => n.id === opts.dropBackend) || routerNode?.id === opts.dropBackend)
+    (limiterNodes.some((n) => n.id === opts.dropBackend) ||
+      dedupNodes.some((n) => n.id === opts.dropBackend) ||
+      routerNode?.id === opts.dropBackend)
   ) {
     return { p99: 0, verdict: "FAIL", narration: `${preset.id}: all backends down — every request fails`, rejected: 0 };
   }
@@ -289,6 +313,10 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
   if (typeof writePctRaw !== "number" || !Number.isFinite(writePctRaw) || writePctRaw < 0 || writePctRaw > 100) {
     throw new Error(`preset '${preset.id}': 'writePct' must be between 0 and 100`);
   }
+  const retryPctRaw: unknown = values["retryPct"] ?? 0;
+  if (typeof retryPctRaw !== "number" || !Number.isFinite(retryPctRaw) || retryPctRaw < 0 || retryPctRaw > 100) {
+    throw new Error(`preset '${preset.id}': 'retryPct' must be between 0 and 100`);
+  }
   // Skewed keys are opt-in (skewPct slider): without it traffic stays
   // unkeyed and legacy presets are byte-identical.
   const skewRaw: unknown = values["skewPct"];
@@ -326,6 +354,13 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
       const downstream = chainTargets.get(n.id);
       if (downstream === undefined) throw new Error(`rate-limiter '${n.id}': missing downstream`);
       return [n.id, createRateLimiter(n.id, resolvedLimiterConfig(topology, n.id, values, preset.id), downstream)];
+    }),
+  );
+  const dedups = new Map(
+    dedupNodes.map((n) => {
+      const downstream = chainTargets.get(n.id);
+      if (downstream === undefined) throw new Error(`dedup '${n.id}': missing downstream`);
+      return [n.id, createDedup(n.id, resolvedDedupConfig(topology, n.id, values, preset.id), downstream)];
     }),
   );
   const caches = new Map(
@@ -398,22 +433,20 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
     }
   }
   for (const [id, lim] of limiters) handlers.set(id, lim.handler);
+  for (const [id, dedup] of dedups) handlers.set(id, dedup.handler);
   for (const [id, cache] of caches) handlers.set(id, cache.handler);
   for (const [id, db] of databases) handlers.set(id, db.handler);
 
   const result = run({
     seed,
     graph,
-    traffic:
-      keyAlpha === undefined
-        ? { rps: rpsRaw, durationMs, writeRatio: writePctRaw / 100 }
-        : {
-            rps: rpsRaw,
-            durationMs,
-            writeRatio: writePctRaw / 100,
-            keyAlpha,
-            keySpace: cacheKeySpace(topology, values),
-          },
+    traffic: {
+      rps: rpsRaw,
+      durationMs,
+      writeRatio: writePctRaw / 100,
+      retryRatio: retryPctRaw / 100,
+      ...(keyAlpha === undefined ? {} : { keyAlpha, keySpace: cacheKeySpace(topology, values) }),
+    },
     handlers,
     sloP99Ms: slo,
   });
@@ -424,6 +457,7 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
   const narration = [
     origin,
     ...[...limiters.values()].map((l) => l.narrate()),
+    ...[...dedups.values()].map((d) => d.narrate()),
     ...[...caches.values()].map((c) => c.narrate()),
     ...[...services.values()].map((s) => s.narrate()),
     ...[...databases.values()].map((d) => d.narrate()),

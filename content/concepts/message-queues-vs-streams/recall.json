@@ -1,0 +1,5 @@
+[
+  { "id": "mq-r1", "q": "What does a queue trade drops for?", "a": "Delay: bursts buffer instead of shedding, and drain at consumer pace." },
+  { "id": "mq-r2", "q": "When does a queue drop exactly like direct?", "a": "Past maxDepth: the buffer fills, then sheds everything after, later and all at once." },
+  { "id": "mq-r3", "q": "What is the backpressure signal?", "a": "Depth and consumer lag: alert on them before the buffer becomes the outage." }
+]

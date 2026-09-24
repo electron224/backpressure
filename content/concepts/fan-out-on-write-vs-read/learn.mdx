@@ -1,0 +1,15 @@
+# Fan-out on Write vs Read
+
+A post must reach every follower. Either the write fans out to all timelines now, or each read gathers from followees live. Same data, opposite cost center.
+
+## What the multiplier shows
+
+Every write broadcasts to four stores while reads stay single. As write share climbs, origin load multiplies: the fan-out narration counts 4× against the read path. Reads stay cheap exactly because writes prepaid.
+
+## The failure mode to remember
+
+Celebrity writes: one post fanning to millions of timelines stalls the write path while reads idle. Then the trade flips to fan-out-on-read — and reads pay the gathering cost instead. Match the direction to the ratio.
+
+## Interview line
+
+"Write-heavy followers: fan out on read. Read-heavy timelines: fan out on write. The multiplier follows the share."

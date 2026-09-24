@@ -1,0 +1,15 @@
+# Pub-Sub
+
+Publishers broadcast; subscribers consume at their own pace. One slow subscriber must never slow the others — each gets its own buffer, its own lag, its own fate.
+
+## What the slow subscriber shows
+
+Three queues behind one topic at 100 RPS: fast and medium drain clean while the slow one (30 RPS drain) falls behind and sheds. Same published stream, three different realities. The publisher never notices.
+
+## The failure mode to remember
+
+Slow-consumer death spiral: lag grows, redeliveries pile on, the subscriber spends its budget reprocessing instead of catching up. Isolate, shed, or scale the slow leg — never throttle the topic for one reader.
+
+## Interview line
+
+"Fan out once, buffer per subscriber, and let slow legs lag alone. Monitor lag per subscription, not topic throughput."

@@ -1,0 +1,15 @@
+# CDC and Outbox
+
+Writing the database and publishing the event are two actions with no shared transaction. Do them separately and they diverge: the row commits while the event never leaves, or the event flies for a rolled-back row.
+
+## What the divergence shows
+
+One write fans to the ledger and the relay queue together. Kill the relay leg and the counts part ways — the database holds what the queue never saw. That gap is the dual-write problem, measured in served counts.
+
+## The failure mode to remember
+
+Dual writes without an outbox: every partial failure is silent divergence discovered downstream. The outbox pattern — atomic row plus relay tailing it — turns two actions into one commit plus a recoverable delivery.
+
+## Interview line
+
+"Never dual-write; outbox the event with the row and let the relay tail it. Divergence you can recount beats divergence you discover."

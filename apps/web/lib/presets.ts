@@ -22,6 +22,11 @@ import { labPreset as quorumsAndNRW } from "../../../content/concepts/quorums-an
 import { labPreset as idempotencyAndExactlyOnce } from "../../../content/concepts/idempotency-and-exactly-once/lab";
 import { labPreset as distributedTransactionsAndSaga } from "../../../content/concepts/distributed-transactions-and-saga/lab";
 import { labPreset as leaderElectionIntuition } from "../../../content/concepts/leader-election-intuition/lab";
+import { labPreset as messageQueuesVsStreams } from "../../../content/concepts/message-queues-vs-streams/lab";
+import { labPreset as pubSub } from "../../../content/concepts/pub-sub/lab";
+import { labPreset as backpressureAndDlq } from "../../../content/concepts/backpressure-and-dlq/lab";
+import { labPreset as fanOutOnWriteVsRead } from "../../../content/concepts/fan-out-on-write-vs-read/lab";
+import { labPreset as cdcAndOutbox } from "../../../content/concepts/cdc-and-outbox/lab";
 import { labPreset as consistencyModels } from "../../../content/concepts/consistency-models/lab";
 import { labPreset as consistentHashing } from "../../../content/concepts/consistent-hashing/lab";
 import { labPreset as sqlVsNosql } from "../../../content/concepts/sql-vs-nosql/lab";
@@ -49,6 +54,11 @@ const presets: Record<string, unknown> = {
   "idempotency-and-exactly-once": idempotencyAndExactlyOnce,
   "distributed-transactions-and-saga": distributedTransactionsAndSaga,
   "leader-election-intuition": leaderElectionIntuition,
+  "message-queues-vs-streams": messageQueuesVsStreams,
+  "pub-sub": pubSub,
+  "backpressure-and-dlq": backpressureAndDlq,
+  "fan-out-on-write-vs-read": fanOutOnWriteVsRead,
+  "cdc-and-outbox": cdcAndOutbox,
   "consistent-hashing": consistentHashing,
   "sql-vs-nosql": sqlVsNosql,
   indexing,

@@ -1,0 +1,5 @@
+[
+  { "id": "ps-r1", "q": "Why does each subscriber need its own buffer?", "a": "So a slow reader lags alone instead of backpressuring the publisher and every other reader." },
+  { "id": "ps-r2", "q": "What do you monitor per subscription?", "a": "Consumer lag and drops: topic throughput hides a dying leg." },
+  { "id": "ps-r3", "q": "How do you handle a permanently slow leg?", "a": "Isolate, shed, or scale it — never throttle the whole topic for one reader." }
+]

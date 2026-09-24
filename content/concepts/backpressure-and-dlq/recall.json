@@ -1,0 +1,5 @@
+[
+  { "id": "bp-r1", "q": "What is the backpressure signal?", "a": "Queue depth and consumer lag: the buffer filling faster than the drain." },
+  { "id": "bp-r2", "q": "What goes to the DLQ and why?", "a": "Permanently failing messages, so one poison pill never blocks the whole line." },
+  { "id": "bp-r3", "q": "Why do retries without a DLQ deadlock a consumer?", "a": "The same bad message re-poisons the head forever instead of exiting once." }
+]

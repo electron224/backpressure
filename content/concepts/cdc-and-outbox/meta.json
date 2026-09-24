@@ -1,0 +1,8 @@
+{
+  "id": "cdc-and-outbox",
+  "title": "CDC and Outbox",
+  "prerequisites": ["fan-out-on-write-vs-read"],
+  "difficulty": "advanced",
+  "estimated_minutes": 15,
+  "tags": ["async", "tier-5"]
+}

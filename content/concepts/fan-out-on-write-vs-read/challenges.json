@@ -1,0 +1,3 @@
+[
+  { "id": "fw.1", "text": "At 50% writes, origin load runs 4× the read path", "verdict": "slo.p99", "apply": { "set": { "rps": 80, "writePct": 50 } } }
+]

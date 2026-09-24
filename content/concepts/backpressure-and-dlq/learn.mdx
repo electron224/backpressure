@@ -1,0 +1,15 @@
+# Backpressure and DLQ
+
+Consumers fall behind; producers don't slow down on their own. Backpressure is the signal upstream — depth and lag — and the dead-letter queue is where permanently failing messages go instead of blocking everyone.
+
+## What the flood shows
+
+Producer at 150 RPS against a 50 RPS drain: depth climbs past buffer into drops while lag reads in seconds. One in twenty messages is poison and lands in the DLQ count without ever touching the consumer. Speed mismatch and message sickness, side by side.
+
+## The failure mode to remember
+
+Silent lag: throughput looks fine while latency debt compounds per second. And retries without a DLQ re-poison the head forever — the same message blocking every consumer behind it.
+
+## Interview line
+
+"Depth is the backpressure signal, DLQ the poison exit. Size buffers from drain times patience, and never let one bad message hold the line."

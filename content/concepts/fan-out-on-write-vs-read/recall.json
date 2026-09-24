@@ -1,0 +1,5 @@
+[
+  { "id": "fw-r1", "q": "What does fan-out-on-write prepay?", "a": "Read cost: every write broadcasts to all timelines so reads stay single and cheap." },
+  { "id": "fw-r2", "q": "When does the trade flip to fan-out-on-read?", "a": "Celebrity writes: one post fanning to millions stalls writes while reads idle." },
+  { "id": "fw-r3", "q": "How does write share move origin load?", "a": "Multiplied by fan-out width: the multiplier follows the share." }
+]

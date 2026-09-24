@@ -1,0 +1,8 @@
+{
+  "id": "fan-out-on-write-vs-read",
+  "title": "Fan-out on Write vs Read",
+  "prerequisites": ["pub-sub"],
+  "difficulty": "intermediate",
+  "estimated_minutes": 15,
+  "tags": ["async", "tier-5"]
+}

@@ -1,0 +1,5 @@
+[
+  { "id": "cdc-r1", "q": "What diverges in a dual write?", "a": "The row commits while the event never leaves, or the event flies for a rolled-back row." },
+  { "id": "cdc-r2", "q": "How does the outbox fix it?", "a": "Atomic row plus relay tailing it: one commit plus a recoverable delivery instead of two actions." },
+  { "id": "cdc-r3", "q": "What does killing the relay leg prove?", "a": "Divergence is countable: the ledger holds exactly what the sink never saw." }
+]

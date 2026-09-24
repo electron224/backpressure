@@ -1,0 +1,15 @@
+# Message Queues vs Streams
+
+Direct calls couple producer speed to consumer speed. A queue in between absorbs bursts the consumer survives later — trading drops for delay.
+
+## What the burst shows
+
+At 250 RPS against a 200 RPS service, the direct variant sheds the excess while the queued variant holds everything and drains at its own pace. Same traffic, same service: the queue converts errors into latency.
+
+## The failure mode to remember
+
+Unbounded patience: the queue holds until maxDepth, then drops exactly like direct — later and all at once. Depth is the backpressure signal; alert on it before the buffer becomes the outage.
+
+## Interview line
+
+"Queue to decouple burst from capacity; size depth from drain rate times patience, and watch lag, not just drops."

@@ -1,0 +1,8 @@
+{
+  "id": "sharding",
+  "title": "Sharding",
+  "prerequisites": ["eviction-policies"],
+  "difficulty": "intermediate",
+  "estimated_minutes": 20,
+  "tags": ["data", "tier-3"]
+}

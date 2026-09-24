@@ -15,6 +15,7 @@ import { labPreset as healthChecksAndCircuitBreakers } from "../../../content/co
 import { labPreset as cachingStrategies } from "../../../content/concepts/caching-strategies/lab";
 import { labPreset as evictionPolicies } from "../../../content/concepts/eviction-policies/lab";
 import { labPreset as replication } from "../../../content/concepts/replication/lab";
+import { labPreset as sharding } from "../../../content/concepts/sharding/lab";
 
 const presets: Record<string, unknown> = {
   "load-balancing": loadBalancing,
@@ -30,6 +31,7 @@ const presets: Record<string, unknown> = {
   "caching-strategies": cachingStrategies,
   "eviction-policies": evictionPolicies,
   replication,
+  sharding,
 };
 
 export function presetSlugs(): string[] {

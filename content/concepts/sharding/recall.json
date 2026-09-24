@@ -1,0 +1,6 @@
+[
+  { "id": "sh-r1", "q": "How does hash sharding pick an owner?", "a": "Key mod shard count, with no lookup or coordinator on the read path." },
+  { "id": "sh-r2", "q": "What is a hot shard?", "a": "Skewed keys pile onto one shard until it saturates and drops while siblings idle." },
+  { "id": "sh-r3", "q": "Why doesn't adding shards always fix a hot shard?", "a": "It only helps if new keys land on the new shards; a single celebrity key follows its hash." },
+  { "id": "sh-r4", "q": "What should you watch instead of fleet totals?", "a": "Per-shard load: totals hide a burning shard behind idle siblings." }
+]

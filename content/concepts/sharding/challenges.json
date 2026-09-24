@@ -1,0 +1,4 @@
+[
+  { "id": "sh.1", "text": "Skew 150 at 200 RPS: shard 0 saturates while siblings idle", "verdict": "slo.p99", "apply": { "set": { "rps": 200, "skewPct": 150 } } },
+  { "id": "sh.2", "text": "Drop skew to 0 and watch the shards balance", "verdict": "slo.p99", "apply": { "set": { "rps": 200, "skewPct": 0 } } }
+]

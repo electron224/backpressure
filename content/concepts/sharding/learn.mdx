@@ -1,0 +1,15 @@
+# Sharding
+
+One database stops scaling. Sharding splits keys across nodes so each holds a slice — total capacity grows with the fleet, and a key always lives in exactly one place.
+
+## How hash sharding routes
+
+Key mod shard count picks the owner. No lookup table, no coordinator on the read path. The price: the mapping is the load balancer, so skewed keys mean skewed load.
+
+## The failure mode to remember
+
+Hot shard: at high skew one shard takes several times its siblings — 526 requests against 111 while the others idle — until it saturates and drops while fleet capacity sits unused. At uniform skew the same fleet balances evenly. Skew, not size, decides whether your shards share.
+
+## Interview line
+
+"Hash for even spread under even keys; watch per-shard load, not fleet totals. When one shard burns, split the hot key space — adding shards only helps if new keys land on them."

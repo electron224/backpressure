@@ -342,12 +342,16 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
     }
     chainTargets.set(chain.id, targets[0]);
   }
-  // Exactly one distributor (lb, router, or fan-out broadcast) per preset.
-  const distributors = [lbNode, routerNode, ...fanoutNodes].filter((n) => n !== undefined);
-  if (distributors.length > 1) {
-    throw new Error(`preset '${preset.id}': at most 1 distributor supported`);
+  // Exactly one router (lb or shard-router) per preset; a fan-out
+  // broadcaster may feed it (e.g. fan -> lb -> services).
+  const routers = [lbNode, routerNode].filter((n) => n !== undefined);
+  if (routers.length > 1) {
+    throw new Error(`preset '${preset.id}': at most 1 router (lb or shard-router) supported`);
   }
-  const distributor = distributors[0];
+  const distributor = lbNode ?? routerNode ?? fanoutNodes[0];
+  // Serving backends: the router's targets when one exists, else the
+  // fan-out's targets, else bare services. A fan-out feeding a router
+  // (fan -> lb) resolves through the router's edges.
   let backends = distributor
     ? topology.edges.filter((e) => e.from === distributor.id).map((e) => e.to)
     : [...serviceIds];
@@ -385,6 +389,8 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
   // The sim graph mirrors the full topology minus a dropped backend, so
   // services behind queues and chain steps all resolve handlers.
   const removedNode = effectiveDrop;
+  // A dropped node resolves no handler: traffic addressed to it vanishes.
+  const alive = (id: string): boolean => id !== removedNode;
   const graph = compile({
     nodes: topology.nodes
       .filter((n) => n.id !== removedNode)
@@ -395,7 +401,9 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
   });
   const router = routerNode ? createShardRouter(routerNode.id, backends, resolvedRouterConfig(topology, routerNode.id, values, preset.id)) : null;
   const fanoutNode = fanoutNodes[0];
-  const fanout = fanoutNode ? createFanout(fanoutNode.id, backends, resolvedFanoutConfig(topology, fanoutNode.id, preset.id)) : null;
+  const fanoutTargets =
+    fanoutNode === undefined ? [] : topology.edges.filter((e) => e.from === fanoutNode.id).map((e) => e.to);
+  const fanout = fanoutNode ? createFanout(fanoutNode.id, fanoutTargets, resolvedFanoutConfig(topology, fanoutNode.id, preset.id)) : null;
   const queueIds = [...new Set([...queueNodes.map((n) => n.id), ...backends.filter((b) => nodeKind(b) === "queue")])];
   const queues = new Map(
     queueIds.map((id) => {
@@ -471,10 +479,10 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
     : null;
 
   const handlers = new Map<string, HandlerFn>();
-  if (routerNode && router !== null) {
+  if (routerNode && router !== null && alive(routerNode.id)) {
     handlers.set(routerNode.id, router.handler);
   }
-  if (fanoutNode && fanout !== null) {
+  if (fanoutNode && fanout !== null && alive(fanoutNode.id)) {
     handlers.set(fanoutNode.id, fanout.handler);
   }
   if (lbNode) {
@@ -522,13 +530,13 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
       handlers.set(id, svc.handler);
     }
   }
-  for (const [id, lim] of limiters) handlers.set(id, lim.handler);
+  for (const [id, lim] of limiters) if (alive(id)) handlers.set(id, lim.handler);
   for (const [id, pipe] of pipes) {
-    if (!deadPipes.has(id)) handlers.set(id, pipe.handler);
+    if (!deadPipes.has(id) && alive(id)) handlers.set(id, pipe.handler);
   }
-  for (const [id, dedup] of dedups) handlers.set(id, dedup.handler);
-  for (const [id, cache] of caches) handlers.set(id, cache.handler);
-  for (const [id, queue] of queues) handlers.set(id, queue.handler);
+  for (const [id, dedup] of dedups) if (alive(id)) handlers.set(id, dedup.handler);
+  for (const [id, cache] of caches) if (alive(id)) handlers.set(id, cache.handler);
+  for (const [id, queue] of queues) if (alive(id)) handlers.set(id, queue.handler);
   for (const [id, db] of databases) handlers.set(id, db.handler);
 
   const result = run({

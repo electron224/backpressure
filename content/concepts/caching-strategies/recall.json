@@ -1,0 +1,6 @@
+[
+  { "id": "cs-r1", "q": "What does cache-aside do on a write?", "a": "Invalidates the entry; the next read misses and repopulates from origin." },
+  { "id": "cs-r2", "q": "Why is write-behind fast but risky?", "a": "It acks immediately and flushes in batches, so a crash loses unwritten dirty data." },
+  { "id": "cs-r3", "q": "When does write-through beat write-behind?", "a": "When crash tolerance matters more than write latency: every write is durable before ack." },
+  { "id": "cs-r4", "q": "What does refresh-ahead trade?", "a": "Extra origin reads near expiry for never serving stale; true background refresh needs tick scheduling." }
+]

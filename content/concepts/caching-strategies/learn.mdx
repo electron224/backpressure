@@ -1,0 +1,22 @@
+# Caching Strategies
+
+Reads love caches; writes force choices. Every strategy answers one question: when a write lands, what happens to the cached copy?
+
+## The four answers
+
+- **Cache-aside** invalidates on write: the next read misses and repopulates. Simple, always consistent enough — but every write costs a future miss.
+- **Write-through** updates cache and origin together. Reads never go stale, writes pay full origin latency.
+- **Write-behind** acks the write fast and flushes to origin in batches. Lowest write latency and coalesced origin load — but unwritten data dies with a crash.
+- **Refresh-ahead** revalidates entries nearing expiry instead of serving them stale. Fewer surprises, more origin reads; true background refresh needs tick scheduling this engine grows later.
+
+## What the numbers show
+
+At 20% writes, behind acks in ~1ms while through pays the full 20ms origin round-trip — watch write p99 split by policy. Batched flushes collapse dozens of origin writes into one per interval.
+
+## The failure mode to remember
+
+Behind trades durability for speed: the dirty window is data loss waiting for a crash. Through trades speed for safety. Aside trades miss penalties for simplicity. Name the trade before choosing.
+
+## Interview line
+
+"Aside for simplicity, through for safety, behind for write speed with a durability caveat, ahead for hot keys. Ask about crash tolerance before picking behind."

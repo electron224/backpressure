@@ -12,6 +12,7 @@ import { labPreset as rateLimiting } from "../../../content/concepts/rate-limiti
 import { labPreset as reverseProxyVsApiGateway } from "../../../content/concepts/reverse-proxy-vs-api-gateway/lab";
 import { labPreset as cdn } from "../../../content/concepts/cdn/lab";
 import { labPreset as healthChecksAndCircuitBreakers } from "../../../content/concepts/health-checks-and-circuit-breakers/lab";
+import { labPreset as cachingStrategies } from "../../../content/concepts/caching-strategies/lab";
 
 const presets: Record<string, unknown> = {
   "load-balancing": loadBalancing,
@@ -24,6 +25,7 @@ const presets: Record<string, unknown> = {
   "reverse-proxy-vs-api-gateway": reverseProxyVsApiGateway,
   cdn,
   "health-checks-and-circuit-breakers": healthChecksAndCircuitBreakers,
+  "caching-strategies": cachingStrategies,
 };
 
 export function presetSlugs(): string[] {

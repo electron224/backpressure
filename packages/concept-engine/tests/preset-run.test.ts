@@ -153,3 +153,50 @@ describe("rate-limiter chain (limiter -> service, no lb)", () => {
     expect(() => runPreset(multi, { rps: 80 })).toThrow(/exactly 1 entry/i);
   });
 });
+
+const cacheChain = {
+  id: "cdn",
+  topology: {
+    nodes: [
+      { id: "edge", kind: "cache", config: { ttlMs: 60_000, capacity: 1000, keySpace: 100, hitMs: 2 } },
+      { id: "origin", kind: "service", config: { serviceMs: 20, concurrency: 4, queueLimit: 200 } },
+    ],
+    edges: [{ from: "edge", to: "origin" }],
+  },
+  controls: [],
+  metrics: ["p99"],
+  challenges: [{ id: "c1", text: "Shield", verdict: "slo.p99" }],
+} as const;
+
+describe("cache chain (edge -> origin, no lb)", () => {
+  it("holds 220 RPS while direct origin collapses", () => {
+    const preset = LabPresetSchema.parse(cacheChain);
+    const shielded = runPreset(preset, { rps: 220 });
+    expect(shielded.verdict).toBe("PASS");
+    expect(shielded.narration).toContain("dropped=0");
+    const direct = LabPresetSchema.parse({
+      ...cacheChain,
+      topology: {
+        nodes: [{ id: "origin", kind: "service", config: { serviceMs: 20, concurrency: 4, queueLimit: 200 } }],
+        edges: [],
+      },
+    });
+    const exposed = runPreset(direct, { rps: 220 });
+    expect(exposed.verdict).toBe("FAIL");
+    expect(exposed.p99).toBeGreaterThan(shielded.p99 * 2);
+  });
+
+  it("collapses to origin saturation at TTL 1s", () => {
+    const preset = LabPresetSchema.parse(cacheChain);
+    const result = runPreset(preset, { rps: 300, "edge.ttlMs": 1000 });
+    expect(result.verdict).toBe("FAIL");
+  });
+
+  it("kill on cache runs on cold (same as fresh), not crash", () => {
+    const preset = LabPresetSchema.parse(cacheChain);
+    const fresh = runPreset(preset, { rps: 80 });
+    const killed = runPreset(preset, { rps: 80 }, { dropBackend: "edge" });
+    expect(killed.verdict).toBe(fresh.verdict);
+    expect(killed.p99).toBe(fresh.p99);
+  });
+});

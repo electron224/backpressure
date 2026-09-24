@@ -1,7 +1,7 @@
 // packages/concept-engine/src/preset-run.ts
 import { compile, run } from "@backpressure/sim-core";
 import type { HandlerFn } from "@backpressure/sim-core";
-import { createLoadBalancer, createRateLimiter, createService } from "@backpressure/sim-components";
+import { createLoadBalancer, createCache, createRateLimiter, createService } from "@backpressure/sim-components";
 import type { LabPreset, PresetValues, Topology } from "./schema.js";
 
 export const DEFAULT_SEED = 7;
@@ -80,6 +80,31 @@ function resolvedLimiterConfig(
   return { algorithm: algoRaw, rps: numberField(merged, "rps", 100), burst: numberField(merged, "burst", 20) };
 }
 
+function resolvedCacheConfig(
+  topology: Topology,
+  id: string,
+  values: PresetValues,
+  presetId: string,
+): { ttlMs: number; capacity: number; keySpace: number; hitMs: number } {
+  const node = topology.nodes.find((n) => n.id === id);
+  if (node === undefined) throw new Error(`preset '${presetId}': unknown node '${id}'`);
+  const base: Record<string, unknown> = isRecord(node.config) ? { ...node.config } : {};
+  for (const [key, value] of Object.entries(values)) {
+    const dot = key.indexOf(".");
+    if (dot === -1 || key.slice(0, dot) !== id) continue;
+    if (typeof value !== "number" || !Number.isFinite(value)) {
+      throw new Error(`preset '${presetId}': override '${key}' must be a finite number`);
+    }
+    base[key.slice(dot + 1)] = value;
+  }
+  return {
+    ttlMs: numberField(base, "ttlMs", 60_000),
+    capacity: numberField(base, "capacity", 1000),
+    keySpace: numberField(base, "keySpace", 100),
+    hitMs: numberField(base, "hitMs", 2),
+  };
+}
+
 export function runPreset(preset: LabPreset, values: PresetValues, opts?: PresetRunOpts): PresetRunResult {
   const seed = opts?.seed ?? DEFAULT_SEED;
   const durationMs = opts?.durationMs ?? DEFAULT_DURATION_MS;
@@ -89,6 +114,8 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
   const lbNode = topology.nodes.find((n) => n.kind === "lb");
   const serviceIds = topology.nodes.filter((n) => n.kind === "service").map((n) => n.id);
   const limiterNodes = topology.nodes.filter((n) => n.kind === "rate-limiter");
+  const cacheNodes = topology.nodes.filter((n) => n.kind === "cache");
+  const chainNodes = [...limiterNodes, ...cacheNodes];
   const roots = topology.nodes.filter((n) => !topology.edges.some((e) => e.to === n.id));
   if (roots.length !== 1) {
     throw new Error(`preset '${preset.id}': expected exactly 1 entry node, found ${roots.length}`);
@@ -96,19 +123,25 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
   if (opts?.dropBackend !== undefined && limiterNodes.some((n) => n.id === opts.dropBackend)) {
     return { p99: 0, verdict: "FAIL", narration: `${preset.id}: all backends down — every request fails`, rejected: 0 };
   }
-  const limiterTargets = new Map<string, string>();
-  for (const limiter of limiterNodes) {
-    const targets = topology.edges.filter((e) => e.from === limiter.id).map((e) => e.to);
+  // Dropped cache = cold restart, which matches the fresh-run state:
+  // ignore the drop and run normally.
+  const effectiveDrop =
+    opts?.dropBackend !== undefined && cacheNodes.some((n) => n.id === opts.dropBackend)
+      ? undefined
+      : opts?.dropBackend;
+  const chainTargets = new Map<string, string>();
+  for (const chain of chainNodes) {
+    const targets = topology.edges.filter((e) => e.from === chain.id).map((e) => e.to);
     if (targets.length !== 1 || targets[0] === undefined) {
-      throw new Error(`rate-limiter '${limiter.id}': needs exactly 1 downstream target`);
+      throw new Error(`chain node '${chain.id}': needs exactly 1 downstream target`);
     }
-    limiterTargets.set(limiter.id, targets[0]);
+    chainTargets.set(chain.id, targets[0]);
   }
   let backends = lbNode
     ? topology.edges.filter((e) => e.from === lbNode.id).map((e) => e.to)
     : [...serviceIds];
-  if (opts?.dropBackend !== undefined) {
-    backends = backends.filter((b) => b !== opts.dropBackend);
+  if (effectiveDrop !== undefined) {
+    backends = backends.filter((b) => b !== effectiveDrop);
   }
   if (backends.length === 0) {
     return { p99: 0, verdict: "FAIL", narration: `${preset.id}: all backends down — every request fails`, rejected: 0 };
@@ -125,11 +158,11 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
   const graph = compile({
     nodes: [
       ...(lbNode ? [{ id: lbNode.id, kind: "lb", config: {} }] : []),
-      ...limiterNodes.map((n) => ({ id: n.id, kind: "rate-limiter", config: {} })),
+      ...chainNodes.map((n) => ({ id: n.id, kind: n.kind, config: {} })),
       ...backends.map((b) => ({ id: b, kind: "service", config: {} })),
     ],
     edges: [
-      ...[...limiterTargets.entries()].map(([from, to]) => ({ from, to })),
+      ...[...chainTargets.entries()].map(([from, to]) => ({ from, to })),
       ...(lbNode ? backends.map((b) => ({ from: lbNode.id, to: b })) : []),
     ],
   });
@@ -138,9 +171,16 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
   );
   const limiters = new Map(
     limiterNodes.map((n) => {
-      const downstream = limiterTargets.get(n.id);
+      const downstream = chainTargets.get(n.id);
       if (downstream === undefined) throw new Error(`rate-limiter '${n.id}': missing downstream`);
       return [n.id, createRateLimiter(n.id, resolvedLimiterConfig(topology, n.id, values, preset.id), downstream)];
+    }),
+  );
+  const caches = new Map(
+    cacheNodes.map((n) => {
+      const downstream = chainTargets.get(n.id);
+      if (downstream === undefined) throw new Error(`cache '${n.id}': missing downstream`);
+      return [n.id, createCache(n.id, resolvedCacheConfig(topology, n.id, values, preset.id), downstream)];
     }),
   );
 
@@ -176,6 +216,7 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
   }
   for (const [id, svc] of services) handlers.set(id, svc.handler);
   for (const [id, lim] of limiters) handlers.set(id, lim.handler);
+  for (const [id, cache] of caches) handlers.set(id, cache.handler);
 
   const result = run({ seed, graph, traffic: { rps: rpsRaw, durationMs }, handlers, sloP99Ms: slo });
   const p99 = result.verdicts.find((v) => v.id === "slo.p99")?.observed ?? 0;
@@ -185,6 +226,7 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
   const narration = [
     origin,
     ...[...limiters.values()].map((l) => l.narrate()),
+    ...[...caches.values()].map((c) => c.narrate()),
     ...[...services.values()].map((s) => s.narrate()),
   ].join(" | ");
   return { p99, verdict: passed ? "PASS" : "FAIL", narration, rejected };

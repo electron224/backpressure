@@ -67,3 +67,40 @@ describe("shard-router", () => {
     expect(runOnce()).toEqual(runOnce());
   });
 });
+
+describe("consistent hashing", () => {
+  it("moves ~1/4 of keys adding a 4th node, mod moves most", () => {
+    const moved = (
+      make: (shards: string[]) => { ownerOf: (key: number) => string },
+      before: string[],
+      after: string[],
+    ): number => {
+      const a = make(before);
+      const b = make(after);
+      let changed = 0;
+      for (let key = 0; key < 200; key += 1) {
+        if (a.ownerOf(key) !== b.ownerOf(key)) changed += 1;
+      }
+      return changed;
+    };
+    // Owner identity survives the add: mod reassigns by position while
+    // the ring keeps every owner except ~1/(N+1) of keys.
+    const modMoved = moved(
+      (s) => createShardRouter("r", s),
+      ["s0", "s1", "s2"],
+      ["s0", "s1", "s2", "s3"],
+    );
+    const ringMoved = moved(
+      (s) => createShardRouter("r", s, { hashing: "consistent", virtualNodes: 100 }),
+      ["s0", "s1", "s2"],
+      ["s0", "s1", "s2", "s3"],
+    );
+    expect(modMoved).toBeGreaterThan(100);
+    expect(ringMoved).toBeLessThan(80);
+    expect(ringMoved).toBeGreaterThan(10);
+  });
+
+  it("rejects unknown hashing", () => {
+    expect(() => createShardRouter("r", ["s0"], { hashing: "rendezvous" as never })).toThrow(/unknown hashing/i);
+  });
+});

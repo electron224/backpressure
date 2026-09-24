@@ -164,6 +164,34 @@ function resolvedCacheConfig(
   };
 }
 
+function resolvedRouterConfig(
+  topology: Topology,
+  id: string,
+  values: PresetValues,
+  presetId: string,
+): { hashing: "mod" | "consistent"; virtualNodes: number } {
+  const node = topology.nodes.find((n) => n.id === id);
+  if (node === undefined) throw new Error(`preset '${presetId}': unknown node '${id}'`);
+  const base: Record<string, unknown> = isRecord(node.config) ? { ...node.config } : {};
+  const hashingRaw: unknown = values["hashing"] ?? base["hashing"];
+  if (hashingRaw !== undefined && hashingRaw !== "mod" && hashingRaw !== "consistent") {
+    throw new Error(`preset '${presetId}': unknown hashing '${String(hashingRaw)}'`);
+  }
+  const merged: Record<string, unknown> = { ...base };
+  for (const [key, value] of Object.entries(values)) {
+    const dot = key.indexOf(".");
+    if (dot === -1 || key.slice(0, dot) !== id) continue;
+    if (typeof value !== "number" || !Number.isFinite(value)) {
+      throw new Error(`preset '${presetId}': override '${key}' must be a finite number`);
+    }
+    merged[key.slice(dot + 1)] = value;
+  }
+  return {
+    hashing: hashingRaw === undefined ? "mod" : hashingRaw,
+    virtualNodes: numberField(merged, "virtualNodes", 100),
+  };
+}
+
 function cacheKeySpace(topology: Topology, values: PresetValues): number {
   const node = topology.nodes.find((n) => n.kind === "cache" || n.kind === "database");
   if (node === undefined) return 100;
@@ -259,7 +287,7 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
       ...(distributor ? backends.map((b) => ({ from: distributor.id, to: b })) : []),
     ],
   });
-  const router = routerNode ? createShardRouter(routerNode.id, backends) : null;
+  const router = routerNode ? createShardRouter(routerNode.id, backends, resolvedRouterConfig(topology, routerNode.id, values, preset.id)) : null;
   const services = new Map(
     backends
       .filter((b) => nodeKind(b) !== "database")

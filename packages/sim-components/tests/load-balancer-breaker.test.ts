@@ -68,3 +68,50 @@ describe("circuit breaker", () => {
     expect(() => createLoadBalancer({ strategy: "round-robin", backends: ["a"], breaker: { failureThreshold: 3, cooldownMs: -1 } })).toThrow();
   });
 });
+
+describe("weighted shares", () => {
+  it("splits 9:1 across ten picks", () => {
+    const lb = createLoadBalancer({
+      strategy: "round-robin",
+      backends: ["v1", "v2"],
+      weights: [
+        { id: "v1", weight: 9 },
+        { id: "v2", weight: 1 },
+      ],
+    });
+    const counts = new Map<string, number>();
+    for (let i = 0; i < 100; i += 1) {
+      const pick = lb.pick(() => 0, i);
+      counts.set(pick, (counts.get(pick) ?? 0) + 1);
+    }
+    expect(counts.get("v1")).toBe(90);
+    expect(counts.get("v2")).toBe(10);
+  });
+
+  it("skips open backends inside the cycle", () => {
+    const lb = createLoadBalancer({
+      strategy: "round-robin",
+      backends: ["v1", "v2"],
+      breaker: { failureThreshold: 1, cooldownMs: 60_000 },
+      weights: [
+        { id: "v1", weight: 1 },
+        { id: "v2", weight: 1 },
+      ],
+    });
+    lb.recordResult("v2", false, 0);
+    expect(lb.pick(() => 0, 10)).toBe("v1");
+  });
+
+  it("rejects unknown backends and zero sums", () => {
+    expect(() =>
+      createLoadBalancer({ strategy: "round-robin", backends: ["v1"], weights: [{ id: "ghost", weight: 1 }] }),
+    ).toThrow(/unknown backend/i);
+    expect(() =>
+      createLoadBalancer({
+        strategy: "round-robin",
+        backends: ["v1"],
+        weights: [{ id: "v1", weight: 0 }],
+      }),
+    ).toThrow(/zero/i);
+  });
+});

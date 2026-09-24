@@ -1,6 +1,11 @@
 // packages/sim-components/src/load-balancer.ts
 export type LbStrategy = "round-robin" | "least-connections";
 
+export interface WeightedShare {
+  id: string;
+  weight: number;
+}
+
 export interface BreakerOpts {
   failureThreshold: number;
   cooldownMs: number;
@@ -12,6 +17,7 @@ export function createLoadBalancer(opts: {
   strategy: LbStrategy;
   backends: string[];
   breaker?: BreakerOpts;
+  weights?: WeightedShare[];
 }): {
   pick: (getInflight: (id: string) => number, now?: number) => string;
   recordResult: (id: string, ok: boolean, now: number) => void;
@@ -45,6 +51,20 @@ export function createLoadBalancer(opts: {
     );
   }
 
+  // Weighted shares expand into a deterministic cycle (e.g. 9:1 repeats
+  // nine v1 picks then one v2). Only round-robin honors weights.
+  const cycle: string[] = [];
+  if (opts.weights !== undefined) {
+    for (const share of opts.weights) {
+      if (!opts.backends.includes(share.id)) throw new Error(`weighted share for unknown backend '${share.id}'`);
+      if (!Number.isInteger(share.weight) || share.weight < 0) {
+        throw new Error(`weight for '${share.id}' must be a non-negative integer`);
+      }
+      for (let i = 0; i < share.weight; i += 1) cycle.push(share.id);
+    }
+    if (cycle.length === 0) throw new Error("weighted shares sum to zero");
+  }
+
   function pick(getInflight: (id: string) => number, now?: number): string {
     picks += 1;
     const first = opts.backends[0];
@@ -66,12 +86,23 @@ export function createLoadBalancer(opts: {
     const available = opts.backends.filter((b) => !isOpen(b));
     const pool = available.length > 0 ? available : [first];
     if (opts.strategy === "round-robin") {
-      for (let i = 0; i < pool.length; i += 1) {
-        const chosen = pool[(cursor + i) % pool.length];
-        if (chosen !== undefined) {
-          cursor += 1;
-          return chosen;
+      if (cycle.length > 0) {
+        for (let i = 0; i < cycle.length; i += 1) {
+          const chosen = cycle[(cursor + i) % cycle.length];
+          if (chosen !== undefined && !isOpen(chosen)) {
+            cursor += 1;
+            return chosen;
+          }
         }
+      } else {
+        for (let i = 0; i < pool.length; i += 1) {
+          const chosen = pool[(cursor + i) % pool.length];
+          if (chosen !== undefined) {
+            cursor += 1;
+            return chosen;
+          }
+        }
+        return first;
       }
       return first;
     }

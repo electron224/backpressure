@@ -449,11 +449,24 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
   // Breaker is opt-in per preset (values["breaker"] === "on"): existing
   // presets without the control keep legacy numbers byte-identically.
   const breakerOn = values["breaker"] === "on";
+  const lbWeights = ((): { id: string; weight: number }[] | undefined => {
+    if (!lbNode || !isRecord(lbNode.config)) return undefined;
+    const raw: unknown = lbNode.config["weights"];
+    if (raw === undefined) return undefined;
+    if (!Array.isArray(raw)) throw new Error(`preset '${preset.id}': 'weights' must be an array`);
+    return raw.map((entry) => {
+      if (!isRecord(entry) || typeof entry["id"] !== "string" || typeof entry["weight"] !== "number") {
+        throw new Error(`preset '${preset.id}': bad weight entry`);
+      }
+      return { id: entry["id"], weight: entry["weight"] };
+    });
+  })();
   const lb = lbNode
     ? createLoadBalancer({
         strategy: strategy === "least-connections" ? "least-connections" : "round-robin",
         backends,
         ...(breakerOn ? { breaker: { failureThreshold: 3, cooldownMs: 2000 } } : {}),
+        ...(lbWeights === undefined ? {} : { weights: lbWeights }),
       })
     : null;
 

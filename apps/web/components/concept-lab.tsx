@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { createRng } from "@backpressure/sim-core";
 import {
   createProgress,
+  estimateCost,
   gradePrediction,
   pickRandomFault,
   predictionError,
@@ -206,6 +207,10 @@ export function ConceptLab({
           ),
         )}
         <MetricTable rows={rows} />
+        <p>
+          Estimated cost: ${Math.round(estimateCost(preset, effectiveRps).monthlyUsd)}/mo at {effectiveRps} RPS (model rates,
+          for comparing architectures).
+        </p>
       </section>
 
       <section aria-label="Predict then reveal">

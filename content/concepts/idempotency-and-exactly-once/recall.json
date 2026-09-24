@@ -1,0 +1,5 @@
+[
+  { "id": "id-r1", "q": "Why doesn't exactly-once delivery exist?", "a": "Timeouts leave senders unsure, so redelivery is unavoidable; guarantees stop at at-least-once transport." },
+  { "id": "id-r2", "q": "How do idempotent receivers fake exactly-once?", "a": "Idempotency keys plus a dedup window: redeliveries answer from the record instead of re-executing." },
+  { "id": "id-r3", "q": "How do you size the dedup window?", "a": "Past the slowest retry: anything arriving after expiry looks like new work." }
+]

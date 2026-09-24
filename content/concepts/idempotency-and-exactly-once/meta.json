@@ -1,0 +1,8 @@
+{
+  "id": "idempotency-and-exactly-once",
+  "title": "Idempotency and Exactly-Once",
+  "prerequisites": ["replication"],
+  "difficulty": "advanced",
+  "estimated_minutes": 20,
+  "tags": ["theory", "tier-4"]
+}

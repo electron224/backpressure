@@ -1,0 +1,4 @@
+[
+  { "id": "id.1", "text": "At 30% retries, dedup absorbs redeliveries without double execution", "verdict": "slo.p99", "apply": { "set": { "rps": 80, "retryPct": 30 } }, "show": "deduped" },
+  { "id": "id.2", "text": "Drop retries to 0 and watch both variants converge", "verdict": "slo.p99", "apply": { "set": { "rps": 80, "retryPct": 0 } } }
+]

@@ -1,0 +1,15 @@
+# Idempotency and Exactly-Once
+
+Networks retry. Timeouts leave the sender unsure, so the same request arrives twice — and without idempotency, executes twice. Exactly-once delivery doesn't exist; idempotent receivers are how you fake it.
+
+## What the retries show
+
+At 30% redelivery without dedup, the origin serves every duplicate: extra load, double side effects, same p99 shape hiding the waste. With an idempotency window keyed on arrival ids, duplicates answer from the record and the origin serves only fresh work.
+
+## The failure mode to remember
+
+Window too small and slow retries slip through as new work; no key at all and nothing is deduplicable. Exactly-once is a receiver property with a bounded memory, not a transport guarantee.
+
+## Interview line
+
+"Retries make every delivery at-least-once; idempotency keys plus a dedup window make the effect exactly-once. Size the window past your slowest retry."

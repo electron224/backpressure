@@ -156,6 +156,15 @@ importers:
 
   packages/sim-core: {}
 
+  tools/content-lint:
+    dependencies:
+      '@backpressure/coach':
+        specifier: workspace:*
+        version: link:../../packages/coach
+      '@backpressure/concept-engine':
+        specifier: workspace:*
+        version: link:../../packages/concept-engine
+
 packages:
 
   /@alloc/quick-lru@5.3.0:

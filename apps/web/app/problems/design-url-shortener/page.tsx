@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ReactElement } from "react";
 import { compileMDX } from "next-mdx-remote/rsc";
 import { getProblem } from "../../../lib/problems";
-import { GradeForm } from "../../../components/grade-form";
+import { InterviewFlow } from "../../../components/interview-flow";
 
 export default async function ProblemPage(): Promise<ReactElement> {
   const problem = getProblem("design-url-shortener");
@@ -37,10 +37,10 @@ export default async function ProblemPage(): Promise<ReactElement> {
       <section aria-label="Design" className="mt-8 border-t border-ink/20 pt-4">
         <h2 className="text-xl font-bold">High-level design</h2>
         <p className="mt-3">
-          Draw on the <Link href="/design" className="hover:text-ember">canvas</Link>, then paste the topology here.
+          Draw on the <Link href="/design" className="hover:text-ember">canvas</Link>, then run the timed loop below.
         </p>
       </section>
-      <GradeForm rubric={problem.rubric} scenarios={problem.scenarios} />
+      <InterviewFlow slug="design-url-shortener" rubric={problem.rubric} scenarios={problem.scenarios} />
     </main>
   );
 }

@@ -20,9 +20,11 @@ interface CanvasEdge {
 export function GradeForm({
   rubric,
   scenarios,
+  onReport,
 }: {
   rubric: { dimensions: GradeDimension[] };
   scenarios: ScenarioDef[];
+  onReport?: (report: GradeReport) => void;
 }): JSX.Element {
   const [text, setText] = useState<string>('{"nodes": [{"id": "lb", "kind": "lb", "config": {}}, {"id": "api", "kind": "service", "config": {}}], "edges": [{"from": "lb", "to": "api"}]}');
   const [report, setReport] = useState<GradeReport | null>(null);
@@ -37,8 +39,10 @@ export function GradeForm({
         (record.nodes ?? []).map((node) => ({ id: node.id, kind: node.type ?? node.kind ?? "service", config: {} })),
         (record.edges ?? []).map((edge) => ({ from: edge.source ?? "", to: edge.target ?? "" })),
       );
-      setReport(gradeWith(topology, rubric, scenarios));
+      const graded = gradeWith(topology, rubric, scenarios);
+      setReport(graded);
       setError(null);
+      if (onReport) onReport(graded);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       setReport(null);

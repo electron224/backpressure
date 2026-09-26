@@ -14,6 +14,7 @@ import {
 import type { Challenge, LabPreset, PresetValues, RecallItem, StorageLike } from "@backpressure/concept-engine";
 import { MetricTable } from "./metric-table";
 import type { LabRow } from "./metric-table";
+import { MetricChart } from "./metric-chart";
 
 const SEED = 7;
 
@@ -75,6 +76,7 @@ export function ConceptLab({
 
   interface ExpandedRow extends LabRow {
     strat: string | undefined;
+    series: { t: number; p99: number; throughput: number; errors: number }[];
   }
 
   const expanded: ExpandedRow[] = [];
@@ -97,7 +99,7 @@ export function ConceptLab({
         rowValues,
         dropped === undefined ? undefined : { dropBackend: dropped },
       );
-      expanded.push({ strategy: label, p99: result.p99, verdict: result.verdict, narration: result.narration, strat });
+      expanded.push({ strategy: label, p99: result.p99, verdict: result.verdict, narration: result.narration, strat, series: result.series });
     }
   }
   const rows: LabRow[] = expanded.map(({ strategy, p99, verdict, narration }) => ({ strategy, p99, verdict, narration }));
@@ -211,6 +213,7 @@ export function ConceptLab({
           ),
         )}
         <MetricTable rows={rows} />
+        <MetricChart series={actualRow.series} slo={preset.sloP99Ms ?? 150} label={`p99 over time: ${actualRow.strategy}`} />
         <p className="mt-3 font-mono text-sm text-smoke">
           Estimated cost: ${Math.round(estimateCost(preset, effectiveRps).monthlyUsd)}/mo at {effectiveRps} RPS (model rates,
           for comparing architectures).

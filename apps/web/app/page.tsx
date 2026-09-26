@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getConcept } from "../lib/content";
 import { presetSlugs } from "../lib/presets";
+import { HeroDemo } from "../components/hero-demo";
 
 export default function Home(): JSX.Element {
   const concepts = presetSlugs().map((slug) => {
@@ -15,6 +16,7 @@ export default function Home(): JSX.Element {
         Each lab is a real simulation, not an animation. Move traffic, break things, predict the numbers, then watch
         what actually happens.
       </p>
+      <HeroDemo />
       <h2 className="mt-10 border-t border-ink/20 pt-4 text-xl font-bold">Concept labs</h2>
       <ul className="mt-3 grid gap-x-8 gap-y-1 sm:grid-cols-2">
         {concepts.map((concept, index) => (

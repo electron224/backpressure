@@ -13,6 +13,7 @@ export interface PresetRunResult {
   verdict: "PASS" | "FAIL";
   narration: string;
   rejected: number;
+  series: { t: number; p99: number; throughput: number; errors: number }[];
 }
 
 export interface PresetRunOpts {
@@ -317,11 +318,11 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
       fanoutNodes.some((n) => n.id === opts.dropBackend) ||
       routerNode?.id === opts.dropBackend)
   ) {
-    return { p99: 0, verdict: "FAIL", narration: `${preset.id}: all backends down — every request fails`, rejected: 0 };
+    return { p99: 0, verdict: "FAIL", narration: `${preset.id}: all backends down — every request fails`, rejected: 0, series: [] };
   }
   // Dropped queues vanish like pipes: producers keep sending into the
   // void while downstream starves. Entry-point kills (limiter, dedup,
-  // router) stay total outages via the rule above.
+  // fan-out, router) stay total outages via the rule above.
   // Dropped pipes vanish mid-chain: upstream steps complete while the rest
   // of the workflow never runs. That dangling partial completion is the
   // saga problem statement, so pipes stay out of the all-down rule.
@@ -359,7 +360,7 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
     backends = backends.filter((b) => b !== effectiveDrop);
   }
   if (backends.length === 0) {
-    return { p99: 0, verdict: "FAIL", narration: `${preset.id}: all backends down — every request fails`, rejected: 0 };
+    return { p99: 0, verdict: "FAIL", narration: `${preset.id}: all backends down — every request fails`, rejected: 0, series: [] };
   }
   if (!distributor && backends.length > 1) {
     throw new Error(`preset '${preset.id}': multiple services without a distributor are unsupported`);
@@ -566,5 +567,5 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
     ...[...services.values()].map((s) => s.narrate()),
     ...[...databases.values()].map((d) => d.narrate()),
   ].join(" | ");
-  return { p99, verdict: passed ? "PASS" : "FAIL", narration, rejected };
+  return { p99, verdict: passed ? "PASS" : "FAIL", narration, rejected, series: result.metrics.map((point) => ({ t: point.t, p99: point.p99, throughput: point.throughput, errors: point.errors })) };
 }

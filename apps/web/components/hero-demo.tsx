@@ -48,12 +48,12 @@ export function HeroDemo(): JSX.Element {
         </span>
       </figcaption>
       <svg viewBox={`0 0 ${width} ${height + 24}`} className="block w-full" role="img" aria-label="p99 divergence chart">
-        <line x1={0} y1={sloY} x2={width} y2={sloY} stroke="#B03A2E" strokeDasharray="5 4" strokeWidth={1} />
-        <text x={width - 4} y={sloY - 4} textAnchor="end" fontSize={10} fill="#B03A2E" fontFamily="monospace">
+        <line x1={0} y1={sloY} x2={width} y2={sloY} className="chart-ember-line" strokeDasharray="5 4" strokeWidth={1} />
+        <text x={width - 4} y={sloY - 4} textAnchor="end" fontSize={10} className="chart-ember-text" fontFamily="monospace">
           SLO 150ms
         </text>
-        <path d={path(curves.rr, width, height, max)} fill="none" stroke="#1C2530" strokeWidth={2} />
-        <path d={path(curves.lc, width, height, max)} fill="none" stroke="#B03A2E" strokeWidth={2} />
+        <path d={path(curves.rr, width, height, max)} fill="none" className="chart-ink" strokeWidth={2} />
+        <path d={path(curves.lc, width, height, max)} fill="none" className="chart-ember-line" strokeWidth={2} />
       </svg>
       <p className="border-t border-ink/10 px-3 py-2 font-mono text-xs text-smoke">
         computed in your browser just now: same engine as every lab below

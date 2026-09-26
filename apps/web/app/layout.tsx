@@ -13,7 +13,7 @@ export default function RootLayout({ children }: { children: ReactNode }): JSX.E
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
       <body>
-        <header className="bg-ink text-paper">
+        <header className="bg-masthead text-onmasthead">
           <div className="mx-auto flex max-w-4xl flex-wrap items-baseline gap-x-6 gap-y-1 px-4 py-3">
             <Link href="/" className="text-lg font-bold tracking-tight">
               Backpressure

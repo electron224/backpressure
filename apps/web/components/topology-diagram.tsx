@@ -62,13 +62,13 @@ export function TopologyDiagram({ topology }: { topology: Topology }): JSX.Eleme
           const y1 = from.y + NODE_H / 2;
           const x2 = to.x;
           const y2 = to.y + NODE_H / 2;
-          return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#1C2530" strokeOpacity={0.45} strokeWidth={1.5} />;
+          return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} className="chart-ink" strokeOpacity={0.45} strokeWidth={1.5} />;
         })}
         {nodes.map((node) => (
           <g key={node.id}>
-            <rect x={node.x} y={node.y} width={NODE_W} height={NODE_H} fill="#F7F8F7" stroke="#1C2530" strokeWidth={1.5} className="dark:fill-[#12161D]" />
-            <text x={node.x + 8} y={node.y + 16} fontSize={9} fill="#5D6D7E" fontFamily="monospace">{node.kind}</text>
-            <text x={node.x + 8} y={node.y + 32} fontSize={12} fontWeight="bold" fill="#1C2530" className="dark:fill-[#E9ECF1]">{node.id}</text>
+            <rect x={node.x} y={node.y} width={NODE_W} height={NODE_H} className="node-box" strokeWidth={1.5} />
+            <text x={node.x + 8} y={node.y + 16} fontSize={9} className="node-kind" fontFamily="monospace">{node.kind}</text>
+            <text x={node.x + 8} y={node.y + 32} fontSize={12} fontWeight="bold" className="node-id">{node.id}</text>
           </g>
         ))}
       </svg>

@@ -15,6 +15,24 @@
     --smoke: 154 164 178;
     --ember: 224 108 91;
   }
+  /* Masthead stays constant in both modes: the anchor, not a theme flip. */
+  :root, .dark {
+    --masthead: 13 18 26;
+    --onmasthead: 247 248 247;
+  }
+  /* SVG theme tokens: charts adapt with the mode, no hardcoded ink. */
+  .chart-ink { stroke: rgb(var(--ink)); }
+  .chart-grid { stroke: rgb(var(--ink)); opacity: 0.2; }
+  .chart-ember-line { stroke: rgb(var(--ember)); }
+  .chart-ember-text { fill: rgb(var(--ember)); }
+  .chart-smoke-text { fill: rgb(var(--smoke)); }
+  .dot-ok { fill: rgb(var(--ink)); }
+  .dot-slow { fill: rgb(var(--ember)); }
+  .dot-err { fill: none; stroke: rgb(var(--ember)); }
+  .err-bar { fill: rgb(var(--ember)); }
+  .node-box { fill: rgb(var(--paper)); stroke: rgb(var(--ink)); }
+  .node-kind { fill: rgb(var(--smoke)); }
+  .node-id { fill: rgb(var(--ink)); }
   body {
     @apply bg-paper text-ink font-sans antialiased;
   }

@@ -28,9 +28,9 @@ export function ThemeToggle(): JSX.Element {
   }
 
   return (
-    <button
-      type="button"
-      className="border border-paper/40 px-2 py-1 font-mono text-sm"
+      <button
+        type="button"
+        className="border border-onmasthead/40 px-2 py-1 font-mono text-sm"
       onClick={toggle}
       aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
     >

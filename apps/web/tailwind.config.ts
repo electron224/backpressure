@@ -10,6 +10,8 @@ export default {
         ink: "rgb(var(--ink) / <alpha-value>)",
         smoke: "rgb(var(--smoke) / <alpha-value>)",
         ember: "rgb(var(--ember) / <alpha-value>)",
+        masthead: "rgb(var(--masthead) / <alpha-value>)",
+        onmasthead: "rgb(var(--onmasthead) / <alpha-value>)",
       },
       fontFamily: {
         sans: ["-apple-system", "BlinkMacSystemFont", "Segoe UI", "Helvetica", "Arial", "sans-serif"],

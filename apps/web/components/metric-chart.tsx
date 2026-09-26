@@ -47,15 +47,15 @@ export function MetricChart({
         {errorBars.map(
           (bar) =>
             bar.h > 0 && (
-              <rect key={bar.x} x={bar.x - 2} y={height + 30 - bar.h} width={4} height={bar.h} fill="#B03A2E" opacity={0.55} />
+              <rect key={bar.x} x={bar.x - 2} y={height + 30 - bar.h} width={4} height={bar.h} className="err-bar" opacity={0.55} />
             ),
         )}
-        <line x1={0} y1={sloY} x2={width} y2={sloY} stroke="#B03A2E" strokeDasharray="5 4" strokeWidth={1} />
-        <text x={width - 4} y={sloY - 4} textAnchor="end" fontSize={10} fill="#B03A2E" fontFamily="monospace">
+        <line x1={0} y1={sloY} x2={width} y2={sloY} className="chart-ember-line" strokeDasharray="5 4" strokeWidth={1} />
+        <text x={width - 4} y={sloY - 4} textAnchor="end" fontSize={10} className="chart-ember-text" fontFamily="monospace">
           SLO {slo}ms
         </text>
-        <path d={points(series.map((p) => p.p99), width, height, maxP99)} fill="none" stroke="#1C2530" strokeWidth={2} />
-        <line x1={0} y1={height + 30} x2={width} y2={height + 30} stroke="#1C2530" strokeOpacity={0.2} strokeWidth={1} />
+        <path d={points(series.map((p) => p.p99), width, height, maxP99)} fill="none" className="chart-ink" strokeWidth={2} />
+        <line x1={0} y1={height + 30} x2={width} y2={height + 30} className="chart-grid" strokeWidth={1} />
       </svg>
       <div className="flex gap-5 border-t border-ink/10 px-3 py-2 font-mono text-xs text-smoke" aria-hidden="true">
         <span>

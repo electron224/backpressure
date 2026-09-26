@@ -125,14 +125,13 @@ export function RequestWaterfall({
               cx={x}
               cy={y}
               r={slow ? DOT_R + 1.5 : DOT_R}
-              fill={dot.ok ? (slow ? "#B03A2E" : "#1C2530") : "none"}
-              stroke={dot.ok ? "none" : "#B03A2E"}
+              className={dot.ok ? (slow ? "dot-slow" : "dot-ok") : "dot-err"}
               strokeWidth={dot.ok ? 0 : 1.5}
               opacity={progress >= 1 ? 0.35 : 1}
             />
           );
         })}
-        <line x1={0} y1={height + 4} x2={width} y2={height + 4} stroke="#1C2530" strokeOpacity={0.2} strokeWidth={1} />
+        <line x1={0} y1={height + 4} x2={width} y2={height + 4} className="chart-grid" strokeWidth={1} />
       </svg>
       <div className="flex flex-wrap items-center gap-3 border-t border-ink/10 px-3 py-2">
         <button

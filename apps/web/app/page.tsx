@@ -3,6 +3,7 @@ import { getConcept } from "../lib/content";
 import { TRACKS } from "../lib/tracks";
 import { HeroDemo } from "../components/hero-demo";
 import { TrackList } from "../components/track-list";
+import { PublishContext } from "../components/assistant-store";
 import type { TrackView } from "../components/track-list";
 
 export default function Home(): JSX.Element {
@@ -21,6 +22,7 @@ export default function Home(): JSX.Element {
         Each lab is a real simulation, not an animation. Move traffic, break things, predict the numbers, then watch
         what actually happens. Start at Tier 1 and work down — every track assumes the ones above it.
       </p>
+      <PublishContext context={{ kind: "home", slug: "home", title: "Backpressure labs", summary: "Catalogue of 34 concept labs across 6 tiers plus interviews." }} />
       <HeroDemo />
       <TrackList tracks={tracks} />
       <h2 className="mt-10 border-t border-ink/20 pt-4 text-xl font-bold">Design interviews</h2>

@@ -56,3 +56,37 @@ describe("coachDeepDive", () => {
     expect(prompt).toContain("NEVER assign scores");
   });
 });
+
+describe("coachAsk", () => {
+  it("falls back without any key", async () => {
+    const { coachAsk } = await import("../src/llm.js");
+    const saved = {
+      anthropic: process.env["ANTHROPIC_API_KEY"],
+      openai: process.env["OPENAI_API_KEY"],
+      google: process.env["GOOGLE_GENERATIVE_AI_API_KEY"],
+      gemini: process.env["GEMINI_API_KEY"],
+    };
+    delete process.env["ANTHROPIC_API_KEY"];
+    delete process.env["OPENAI_API_KEY"];
+    delete process.env["GOOGLE_GENERATIVE_AI_API_KEY"];
+    delete process.env["GEMINI_API_KEY"];
+    try {
+      const result = await coachAsk(
+        {
+          question: "What is p99?",
+          page: { kind: "concept", slug: "x", title: "X", summary: "Y" },
+          history: [],
+          attemptId: "test-ask",
+        },
+        {},
+      );
+      expect(result.grounded).toBe(false);
+      expect(result.answer.answer.length).toBeGreaterThan(0);
+    } finally {
+      if (saved.anthropic !== undefined) process.env["ANTHROPIC_API_KEY"] = saved.anthropic;
+      if (saved.openai !== undefined) process.env["OPENAI_API_KEY"] = saved.openai;
+      if (saved.google !== undefined) process.env["GOOGLE_GENERATIVE_AI_API_KEY"] = saved.google;
+      if (saved.gemini !== undefined) process.env["GEMINI_API_KEY"] = saved.gemini;
+    }
+  });
+});

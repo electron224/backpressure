@@ -1,5 +1,6 @@
 import type { ReactElement } from "react";
 import { CoachLab } from "../../components/coach-lab";
+import { PublishContext } from "../../components/assistant-store";
 
 export default function CoachPage(): ReactElement {
   return (
@@ -10,6 +11,7 @@ export default function CoachPage(): ReactElement {
         Draw any architecture, run it, then ask for critique. The coach explains your numbers and probes your
         trade-offs — it never scores; the simulator already did.
       </p>
+      <PublishContext context={{ kind: "coach", slug: "coach", title: "Coach", summary: "Open critique: run any topology, ask for grounded feedback." }} />
       <CoachLab />
     </main>
   );

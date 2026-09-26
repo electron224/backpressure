@@ -1,6 +1,7 @@
 import type { ReactElement } from "react";
 import { notFound } from "next/navigation";
 import { FixitLab } from "../../../components/fixit-lab";
+import { PublishContext } from "../../../components/assistant-store";
 import { meltingApi } from "../../../../../content/fixits/melting-api";
 import { lonelyDatabase } from "../../../../../content/fixits/lonely-database";
 import { openFloodgate } from "../../../../../content/fixits/open-floodgate";
@@ -18,6 +19,7 @@ export default function FixitPage({ params }: { params: { slug: string } }): Rea
     <main>
       <p className="mt-8 font-mono text-sm text-smoke">fix-it</p>
       <h1 className="mt-2 text-3xl font-bold tracking-tight">{fixit.title}</h1>
+      <PublishContext context={{ kind: "fixit", slug: fixit.id, title: fixit.title, summary: fixit.story }} />
       <FixitLab fixit={fixit} />
     </main>
   );

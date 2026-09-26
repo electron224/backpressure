@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import "./globals.css";
 import { ThemeToggle } from "../components/theme-toggle";
+import { AssistantSidebar } from "../components/assistant-sidebar";
 
 const THEME_SCRIPT = `(function(){try{var t=localStorage.getItem("bp:theme");if(!t)t=window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";if(t==="dark")document.documentElement.classList.add("dark");}catch(e){}})();`;
 
@@ -31,6 +32,7 @@ export default function RootLayout({ children }: { children: ReactNode }): JSX.E
           <div className="h-0.5 bg-ember" aria-hidden="true" />
         </header>
         <div className="mx-auto max-w-4xl px-4 pb-16">{children}</div>
+        <AssistantSidebar />
       </body>
     </html>
   );

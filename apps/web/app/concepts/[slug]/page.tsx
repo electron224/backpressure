@@ -1,6 +1,7 @@
 import { compileMDX } from "next-mdx-remote/rsc";
 import { ConceptLab } from "../../../components/concept-lab";
 import { ConceptNav } from "../../../components/concept-nav";
+import { PublishContext } from "../../../components/assistant-store";
 import { getConcept } from "../../../lib/content";
 import { getPreset, presetSlugs } from "../../../lib/presets";
 import { nextAfter } from "../../../lib/tracks";
@@ -21,6 +22,7 @@ export default async function ConceptPage({ params }: { params: { slug: string }
       <section aria-label="Learn">
         <div className="prose mt-4 max-w-2xl leading-relaxed dark:prose-invert">{content}</div>
       </section>
+      <PublishContext context={{ kind: "concept", slug: params.slug, title: concept.meta.title, summary: `Four-stage lab: learn, play, predict, chaos, stress, recall.` }} />
       <ConceptNav slug={params.slug} prerequisites={concept.meta.prerequisites} next={next} />
       <ConceptLab slug={concept.meta.id} preset={getPreset(concept.meta.id)} challenges={concept.challenges} recall={concept.recall} />
     </main>

@@ -6,6 +6,7 @@ import { createHash } from "node:crypto";
 import { z } from "zod";
 import type { Topology } from "@backpressure/concept-engine";
 import { buildProvider, selectProviderName } from "./providers.js";
+import type { ProviderEnv } from "./providers.js";
 
 // Server-only module: never import from client components. The API key
 // stays here. Bump RUBRIC_VERSION whenever prompts/ change so cached
@@ -67,10 +68,83 @@ function fenceLearnerData(input: CoachInput): string {
   return `<learner-data>\n${JSON.stringify({ topology: input.topology, transcript: input.transcript })}\n</learner-data>`;
 }
 
-export async function coachDeepDive(input: CoachInput): Promise<CoachResult> {
-  const providerName = selectProviderName();
+export const AssistantAnswerSchema = z.object({
+  answer: z.string().min(1),
+  followUps: z.array(z.string().min(1)).max(3),
+});
+
+export type AssistantAnswer = z.infer<typeof AssistantAnswerSchema>;
+
+export interface AskInput {
+  question: string;
+  page: { kind: string; slug: string; title: string; summary: string };
+  history: { role: "user" | "assistant"; text: string }[];
+  attemptId: string;
+}
+
+export interface AskResult {
+  answer: AssistantAnswer;
+  cached: boolean;
+  grounded: boolean;
+}
+
+function loadAssistantPrompt(): string {
+  return readFileSync(join(here, "..", "prompts", "v1", "assistant.md"), "utf8");
+}
+
+function askFallback(): AssistantAnswer {
+  return {
+    answer:
+      "Coach unavailable: add a provider key in Settings (kept for this session only, never stored) to enable grounded answers.",
+    followUps: ["Run the lab once, then ask what surprised you."],
+  };
+}
+
+export async function coachAsk(input: AskInput, env?: ProviderEnv): Promise<AskResult> {
+  const providerName = selectProviderName(env);
+  if (providerName === null) return { answer: askFallback(), cached: false, grounded: false };
+  const provider = buildProvider(providerName, env);
+  const key = createHash("sha256")
+    .update(JSON.stringify([provider.name, provider.model, input.page, input.question, RUBRIC_VERSION]))
+    .digest("hex");
+  const hit = askCache.get(key);
+  if (hit !== undefined) return { answer: hit, cached: true, grounded: true };
+
+  const spent = spendByAttempt.get(input.attemptId) ?? 0;
+  if (spent >= MAX_SESSION_USD) {
+    throw new Error(`coach budget exhausted for attempt ${input.attemptId} (cap $${MAX_SESSION_USD})`);
+  }
+
+  const history = input.history
+    .slice(-6)
+    .map((entry) => `${entry.role === "user" ? "Learner" : "Coach"}: ${entry.text}`)
+    .join("\n");
+  const prompt = `${loadAssistantPrompt()}\n\nPAGE: ${JSON.stringify(input.page)}\nHISTORY:\n${history}\n${fenceLearnerText(
+    input.question,
+  )}`;
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const completion = await provider.complete(prompt, MAX_TOKENS);
+    const parsed = AssistantAnswerSchema.safeParse(extractJson(completion.text));
+    if (parsed.success) {
+      spendByAttempt.set(input.attemptId, spent + provider.priceUsd(completion.inputTokens, completion.outputTokens));
+      askCache.set(key, parsed.data);
+      return { answer: parsed.data, cached: false, grounded: true };
+    }
+  }
+  return { answer: askFallback(), cached: false, grounded: false };
+}
+
+const askCache = new Map<string, AssistantAnswer>();
+
+function fenceLearnerText(question: string): string {
+  return `<learner-data>\n${JSON.stringify({ question })}\n</learner-data>`;
+}
+
+export async function coachDeepDive(input: CoachInput, env?: ProviderEnv): Promise<CoachResult> {
+  const providerName = selectProviderName(env);
   if (providerName === null) return { feedback: fallback(), cached: false, grounded: false };
-  const provider = buildProvider(providerName);
+  const provider = buildProvider(providerName, env);
   const key = hashKey(provider.name, provider.model, input);
   const hit = cache.get(key);
   if (hit !== undefined) return { feedback: hit, cached: true, grounded: true };

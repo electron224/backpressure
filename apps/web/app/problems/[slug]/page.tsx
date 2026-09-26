@@ -3,6 +3,7 @@ import type { ReactElement } from "react";
 import { compileMDX } from "next-mdx-remote/rsc";
 import { getProblem } from "../../../lib/problems";
 import { InterviewFlow } from "../../../components/interview-flow";
+import { PublishContext } from "../../../components/assistant-store";
 import { ReadinessBanner } from "../../../components/readiness-banner";
 
 const SIBLINGS: { slug: string; title: string }[] = [
@@ -69,6 +70,7 @@ export default async function ProblemPage({ params }: { params: { slug: string }
           climb the <Link href={`/problems/${params.slug}/ladder`} className="hover:text-ember">scale ladder</Link>.
         </p>
       </section>
+      <PublishContext context={{ kind: "problem", slug: params.slug, title: problem.meta.title, summary: "Timed 5-phase interview with deterministic grading." }} />
       <InterviewFlow
         slug={params.slug}
         rubric={problem.rubric}

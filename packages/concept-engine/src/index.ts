@@ -19,5 +19,5 @@ export { createProgress } from "./progress.js";
 export { DEFAULT_DURATION_MS, DEFAULT_SEED, DEFAULT_SLO_P99_MS, runPreset } from "./preset-run.js";
 export { COST_PER_MILLION_REQUESTS, SECONDS_PER_MONTH, estimateCost } from "./cost.js";
 export type { CostEstimate, CostLine } from "./cost.js";
-export type { PresetRunOpts, PresetRunResult } from "./preset-run.js";
+export type { PresetRunOpts, PresetRunResult, RequestTrace } from "./preset-run.js";
 export type { ConceptProgress, PredictionRecord, StorageLike } from "./progress.js";

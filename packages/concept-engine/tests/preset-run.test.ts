@@ -359,3 +359,21 @@ describe("dedup chain", () => {
     expect(result.narration).toContain("all backends down");
   });
 });
+
+
+describe("request traces", () => {
+  it("exposes per-request completions consistent with buckets", () => {
+    const preset = LabPresetSchema.parse(labPreset);
+    const result = runPreset(preset, { strategy: "least-connections", rps: 80 });
+    expect(result.completions.length).toBeGreaterThan(0);
+    expect(result.completions.length).toBeLessThanOrEqual(2000);
+    const ok = result.completions.filter((c) => c.ok).length;
+    const errors = result.completions.length - ok;
+    expect(errors).toBe(result.rejected);
+    expect(ok).toBeGreaterThan(0);
+    for (const c of result.completions) {
+      expect(c.at).toBeGreaterThanOrEqual(0);
+      expect(c.latencyMs).toBeGreaterThanOrEqual(0);
+    }
+  });
+});

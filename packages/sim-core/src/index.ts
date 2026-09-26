@@ -15,4 +15,4 @@ export type {
 export { createRng } from "./rng.js";
 export { EventQueue } from "./queue.js";
 export { compile, run } from "./engine.js";
-export type { EngineContext, HandlerFn, RunOpts, RunResult } from "./engine.js";
+export type { EngineContext, HandlerFn, RunOpts, RunResult, RequestCompletion } from "./engine.js";

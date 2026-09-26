@@ -31,10 +31,17 @@ export interface RunOpts {
   sloP99Ms?: number;
 }
 
+export interface RequestCompletion {
+  at: number;
+  latencyMs: number;
+  ok: boolean;
+}
+
 export interface RunResult {
   eventLog: SimEvent[];
   metrics: MetricPoint[];
   verdicts: Verdict[];
+  completions: RequestCompletion[];
 }
 
 export function compile(topology: Topology): SimGraph {
@@ -179,7 +186,8 @@ export function run(opts: RunOpts): RunResult {
 
   const metrics = bucketize(completions, opts.traffic.durationMs);
   const verdicts = judge(completions, opts.sloP99Ms ?? 150);
-  return { eventLog, metrics, verdicts };
+  const requestCompletions: RequestCompletion[] = completions.map((c) => ({ at: c.at, latencyMs: c.latencyMs, ok: c.ok }));
+  return { eventLog, metrics, verdicts, completions: requestCompletions };
 }
 
 function percentile(sorted: number[], p: number): number {

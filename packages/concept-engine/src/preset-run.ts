@@ -8,13 +8,22 @@ export const DEFAULT_SEED = 7;
 export const DEFAULT_DURATION_MS = 5000;
 export const DEFAULT_SLO_P99_MS = 150;
 
+export interface RequestTrace {
+  at: number;
+  latencyMs: number;
+  ok: boolean;
+}
+
 export interface PresetRunResult {
   p99: number;
   verdict: "PASS" | "FAIL";
   narration: string;
   rejected: number;
   series: { t: number; p99: number; throughput: number; errors: number }[];
+  completions: RequestTrace[];
 }
+
+export const MAX_TRACE_COMPLETIONS = 2000;
 
 export interface PresetRunOpts {
   seed?: number;
@@ -318,7 +327,7 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
       fanoutNodes.some((n) => n.id === opts.dropBackend) ||
       routerNode?.id === opts.dropBackend)
   ) {
-    return { p99: 0, verdict: "FAIL", narration: `${preset.id}: all backends down — every request fails`, rejected: 0, series: [] };
+    return { p99: 0, verdict: "FAIL", narration: `${preset.id}: all backends down — every request fails`, rejected: 0, series: [], completions: [] };
   }
   // Dropped queues vanish like pipes: producers keep sending into the
   // void while downstream starves. Entry-point kills (limiter, dedup,
@@ -360,7 +369,7 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
     backends = backends.filter((b) => b !== effectiveDrop);
   }
   if (backends.length === 0) {
-    return { p99: 0, verdict: "FAIL", narration: `${preset.id}: all backends down — every request fails`, rejected: 0, series: [] };
+    return { p99: 0, verdict: "FAIL", narration: `${preset.id}: all backends down — every request fails`, rejected: 0, series: [], completions: [] };
   }
   if (!distributor && backends.length > 1) {
     throw new Error(`preset '${preset.id}': multiple services without a distributor are unsupported`);
@@ -567,5 +576,5 @@ export function runPreset(preset: LabPreset, values: PresetValues, opts?: Preset
     ...[...services.values()].map((s) => s.narrate()),
     ...[...databases.values()].map((d) => d.narrate()),
   ].join(" | ");
-  return { p99, verdict: passed ? "PASS" : "FAIL", narration, rejected, series: result.metrics.map((point) => ({ t: point.t, p99: point.p99, throughput: point.throughput, errors: point.errors })) };
+  return { p99, verdict: passed ? "PASS" : "FAIL", narration, rejected, series: result.metrics.map((point) => ({ t: point.t, p99: point.p99, throughput: point.throughput, errors: point.errors })), completions: result.completions.slice(0, MAX_TRACE_COMPLETIONS).map((c) => ({ at: c.at, latencyMs: c.latencyMs, ok: c.ok })) };
 }

@@ -1,0 +1,8 @@
+{
+  "id": "design-video",
+  "title": "Design a Video Service",
+  "difficulty": "advanced",
+  "target_level": "SDE3",
+  "duration_minutes": 45,
+  "concepts_required": ["cdn", "load-balancing", "caching-strategies", "sharding"]
+}

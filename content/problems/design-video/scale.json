@@ -1,0 +1,7 @@
+{
+  "dau": 50000000,
+  "streams_per_day": 500000000,
+  "hot_catalog_share": 0.1,
+  "premiere_share": 0.5,
+  "segment_bytes": 1000000
+}

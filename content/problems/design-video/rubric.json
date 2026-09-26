@@ -1,0 +1,30 @@
+{
+  "dimensions": [
+    {
+      "id": "availability",
+      "weight": 0.4,
+      "grader": "deterministic",
+      "criteria": [
+        { "id": "avail.no-spof", "check": "no_single_point_of_failure", "points": 5 },
+        { "id": "avail.single-loss", "check": "survives_each_single_loss", "points": 5 }
+      ]
+    },
+    {
+      "id": "performance",
+      "weight": 0.35,
+      "grader": "deterministic",
+      "criteria": [
+        { "id": "perf.read-p99", "check": "slo_p99_under_load", "points": 5 },
+        { "id": "perf.cache-if-db", "check": "cache_between_app_and_db", "points": 5 }
+      ]
+    },
+    {
+      "id": "communication",
+      "weight": 0.25,
+      "grader": "llm",
+      "criteria": [
+        { "id": "comm.tradeoffs", "text": "Articulates the premiere-hour plan with reference to observed numbers", "points": 5 }
+      ]
+    }
+  ]
+}

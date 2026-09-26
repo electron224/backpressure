@@ -4,7 +4,7 @@ import { getProblem } from "../../../../lib/problems";
 import { ScaleLadder } from "../../../../components/scale-ladder";
 
 export function generateStaticParams(): { slug: string }[] {
-  return [{ slug: "design-url-shortener" }, { slug: "design-twitter" }];
+  return [{ slug: "design-url-shortener" }, { slug: "design-twitter" }, { slug: "design-video" }];
 }
 
 export default async function LadderPage({ params }: { params: { slug: string } }): Promise<ReactElement> {

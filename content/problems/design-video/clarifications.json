@@ -1,0 +1,6 @@
+[
+  { "q": "Live or on-demand?", "a": "On-demand streaming this round; live is a stated follow-up with different latency needs." },
+  { "q": "What dominates traffic?", "a": "Reads by far: a small hot catalog takes most views. See scale.json." },
+  { "q": "How hot can one video get?", "a": "A premiere can take half of all traffic for an hour. Say how the origin survives it." },
+  { "q": "What scale should we target?", "a": "See scale.json — and defend the premiere hour, not the average." }
+]

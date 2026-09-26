@@ -7,6 +7,7 @@ import { InterviewFlow } from "../../../components/interview-flow";
 const SIBLINGS: { slug: string; title: string }[] = [
   { slug: "design-url-shortener", title: "Design a URL Shortener" },
   { slug: "design-twitter", title: "Design Twitter" },
+  { slug: "design-video", title: "Design a Video Service" },
 ];
 
 export function generateStaticParams(): { slug: string }[] {

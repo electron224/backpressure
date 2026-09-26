@@ -40,3 +40,18 @@ describe("design-twitter references", () => {
     }
   });
 });
+
+describe("design-video references", () => {
+  it("v1 fails, v2 passes deterministic", async () => {
+    const { v1SingleOrigin } = await import("../../../content/problems/design-video/reference/v1-single-origin.js");
+    const { v2Cdn } = await import("../../../content/problems/design-video/reference/v2-cdn.js");
+    const { LabPresetSchema } = await import("@backpressure/concept-engine");
+    const v1 = gradeSubmission(LabPresetSchema.parse(v1SingleOrigin).topology, "content/problems/design-video");
+    expect(v1.criteria.find((c) => c.id === "avail.no-spof")?.earned).toBe(0);
+    expect(v1.criteria.find((c) => c.id === "perf.read-p99")?.earned).toBe(0);
+    const v2 = gradeSubmission(LabPresetSchema.parse(v2Cdn).topology, "content/problems/design-video");
+    for (const criterion of v2.criteria) {
+      expect(criterion.earned).toBe(criterion.points);
+    }
+  });
+});

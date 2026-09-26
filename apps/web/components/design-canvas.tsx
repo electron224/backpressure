@@ -96,62 +96,66 @@ export function DesignCanvas(): JSX.Element {
 
   return (
     <div>
-      <section aria-label="Palette">
-        <h2>Palette (constrained: simulatable nodes only)</h2>
-        {palette.map((kind) => (
-          <button key={kind} type="button" onClick={() => addNode(kind)}>
-            Add {kind}
-          </button>
-        ))}
+      <section aria-label="Palette" className="mt-8 border-t border-ink/20 pt-4">
+        <h2 className="text-xl font-bold">Palette (constrained: simulatable nodes only)</h2>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {palette.map((kind) => (
+            <button key={kind} type="button" className="border border-ink px-3 py-1.5 font-mono text-sm" onClick={() => addNode(kind)}>
+              Add {kind}
+            </button>
+          ))}
+        </div>
       </section>
-      <section aria-label="Canvas">
-        <h2>Canvas</h2>
-        <div style={{ height: 400 }}>
+      <section aria-label="Canvas" className="mt-8 border-t border-ink/20 pt-4">
+        <h2 className="text-xl font-bold">Canvas</h2>
+        <div className="mt-3 border border-ink/20" style={{ height: 400 }}>
           <ReactFlow nodes={nodes} edges={edges} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} fitView>
             <Background />
             <Controls />
           </ReactFlow>
         </div>
       </section>
-      <section aria-label="Run">
-        <h2>Run</h2>
-        <label>
+      <section aria-label="Run" className="mt-8 border-t border-ink/20 pt-4">
+        <h2 className="text-xl font-bold">Run</h2>
+        <label className="mt-3 block max-w-xl">
           Traffic (RPS): {rps}
-          <input type="range" min={10} max={300} value={rps} onChange={(e) => setRps(Number(e.currentTarget.value))} />
+          <input className="block w-full" type="range" min={10} max={300} value={rps} onChange={(e) => setRps(Number(e.currentTarget.value))} />
         </label>
-        <button type="button" onClick={runDesign}>
+        <button type="button" className="mt-3 border border-ember bg-ember px-3 py-1.5 text-paper" onClick={runDesign}>
           Run design
         </button>
       </section>
       {report !== null && (
-        <section aria-label="Results">
-          <h2>Results</h2>
+        <section aria-label="Results" className="mt-8 border-t border-ink/20 pt-4">
+          <h2 className="text-xl font-bold">Results</h2>
           {report.error !== null ? (
-            <p>{report.error}</p>
+            <p className="mt-3">{report.error}</p>
           ) : (
             <>
-              <table>
-                <caption>Simulation verdicts</caption>
+              <div className="mt-3 overflow-x-auto border border-ink/20">
+              <table className="w-full border-collapse font-mono text-sm">
+                <caption className="px-3 py-2 text-left font-mono text-sm text-smoke">Simulation verdicts</caption>
                 <thead>
-                  <tr>
-                    <th scope="col">Design</th>
-                    <th scope="col">p99 (ms)</th>
-                    <th scope="col">SLO 150ms</th>
-                    <th scope="col">What happened</th>
+                  <tr className="border-y border-ink/20 text-left">
+                    <th scope="col" className="px-3 py-2 font-bold">Design</th>
+                    <th scope="col" className="px-3 py-2 font-bold">p99 (ms)</th>
+                    <th scope="col" className="px-3 py-2 font-bold">SLO 150ms</th>
+                    <th scope="col" className="px-3 py-2 font-bold">What happened</th>
                   </tr>
                 </thead>
                 <tbody>
                   {report.rows.map((row) => (
-                    <tr key={row.label}>
-                      <th scope="row">{row.label}</th>
-                      <td>{Math.round(row.p99)}</td>
-                      <td>{row.verdict}</td>
-                      <td>{row.narration}</td>
+                    <tr key={row.label} className="border-b border-ink/10 align-top last:border-0">
+                      <th scope="row" className="px-3 py-2 text-left font-bold">{row.label}</th>
+                      <td className="px-3 py-2 tabular-nums">{Math.round(row.p99)}</td>
+                      <td className={row.verdict === "FAIL" ? "px-3 py-2 font-bold text-ember" : "px-3 py-2"}>{row.verdict}</td>
+                      <td className="max-w-md px-3 py-2 text-xs leading-relaxed">{row.narration}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              <ul>
+              </div>
+              <ul className="mt-3 space-y-1">
                 {report.checks.map((check) => (
                   <li key={check.id}>
                     {check.id}: {check.passed ? "PASS" : "FAIL"} — {check.detail}

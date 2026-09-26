@@ -170,13 +170,16 @@ export function ConceptLab({
 
   return (
     <div>
-      <section aria-label="Play">
-        <h2>Play</h2>
+      <section aria-label="Play" className="mt-10 border-t border-ink/20 pt-4">
+        <h2 className="text-xl font-bold">
+          <span className="mr-3 font-mono text-sm font-normal text-smoke">02</span>Play
+        </h2>
         {preset.controls.map((control) =>
           control.kind === "select" ? (
-            <label key={control.id}>
-              {control.label}
+            <label key={control.id} className="mt-3 block max-w-xl">
+              {control.label}{" "}
               <select
+                className="ml-2 border border-ink/30 bg-paper px-2 py-1"
                 value={String(values[control.id] ?? control.def)}
                 onChange={(e) => {
                   const next = e.currentTarget.value;
@@ -191,9 +194,10 @@ export function ConceptLab({
               </select>
             </label>
           ) : (
-            <label key={control.id}>
+            <label key={control.id} className="mt-3 block max-w-xl">
               {control.label}: {String(values[control.id] ?? control.def)}
               <input
+                className="block w-full"
                 type="range"
                 min={control.min ?? 0}
                 max={control.max ?? 100}
@@ -207,17 +211,20 @@ export function ConceptLab({
           ),
         )}
         <MetricTable rows={rows} />
-        <p>
+        <p className="mt-3 font-mono text-sm text-smoke">
           Estimated cost: ${Math.round(estimateCost(preset, effectiveRps).monthlyUsd)}/mo at {effectiveRps} RPS (model rates,
           for comparing architectures).
         </p>
       </section>
 
-      <section aria-label="Predict then reveal">
-        <h2>Predict, then reveal</h2>
-        <label>
+      <section aria-label="Predict then reveal" className="mt-10 border-t border-ink/20 pt-4">
+        <h2 className="text-xl font-bold">
+          <span className="mr-3 font-mono text-sm font-normal text-smoke">03</span>Predict, then reveal
+        </h2>
+        <label className="mt-3 block max-w-xl">
           What will p99 be at {effectiveRps} RPS with {descriptor}? {prediction}ms
           <input
+            className="block w-full disabled:opacity-50"
             type="range"
             min={0}
             max={3000}
@@ -227,35 +234,39 @@ export function ConceptLab({
           />
         </label>
         {committed === null ? (
-          <button type="button" onClick={commitPrediction}>
+          <button type="button" className="mt-3 border border-ember bg-ember px-3 py-1.5 text-paper" onClick={commitPrediction}>
             Commit prediction and run
           </button>
         ) : (
-          <p>
+          <p className="mt-3 max-w-xl leading-relaxed">
             You predicted {committed}ms; actual {Math.round(actual)}ms; error {Math.round(predictionError(committed, actual))}ms —{" "}
             {gradePrediction(predictionError(committed, actual)) ? "within 50ms, nice." : "off by more than 50ms."}{" "}
-            <button type="button" onClick={() => setCommitted(null)}>
+            <button type="button" className="border border-ink px-3 py-1.5" onClick={() => setCommitted(null)}>
               Predict again
             </button>
           </p>
         )}
       </section>
 
-      <section aria-label="Chaos">
-        <h2>Chaos button</h2>
-        <button type="button" onClick={injectChaos}>
+      <section aria-label="Chaos" className="mt-10 border-t border-ink/20 pt-4">
+        <h2 className="text-xl font-bold">
+          <span className="mr-3 font-mono text-sm font-normal text-smoke">04</span>Chaos button
+        </h2>
+        <button type="button" className="mt-3 border border-ink px-3 py-1.5" onClick={injectChaos}>
           Inject random fault
         </button>
-        <p>{chaosNote}</p>
+        <p className="mt-2">{chaosNote}</p>
       </section>
 
-      <section aria-label="Stress">
-        <h2>Stress</h2>
+      <section aria-label="Stress" className="mt-10 border-t border-ink/20 pt-4">
+        <h2 className="text-xl font-bold">
+          <span className="mr-3 font-mono text-sm font-normal text-smoke">05</span>Stress
+        </h2>
         <ul>
           {challenges.map((c) => (
-            <li key={c.id}>
+            <li key={c.id} className="border-b border-ink/10 py-2">
               {c.text} — verdict: {c.verdict} — live: {liveResult(c.id)}{" "}
-              <button type="button" onClick={() => attemptChallenge(c.id)}>
+              <button type="button" className="ml-2 border border-ink px-3 py-1.5" onClick={() => attemptChallenge(c.id)}>
                 Attempt {c.id}
               </button>
             </li>
@@ -263,17 +274,20 @@ export function ConceptLab({
         </ul>
       </section>
 
-      <section aria-label="Recall">
-        <h2>Recall</h2>
+      <section aria-label="Recall" className="mt-10 border-t border-ink/20 pt-4">
+        <h2 className="text-xl font-bold">
+          <span className="mr-3 font-mono text-sm font-normal text-smoke">06</span>Recall
+        </h2>
         <ul>
           {recall.map((item) => (
-            <li key={item.id}>
+            <li key={item.id} className="border-b border-ink/10 py-2">
               <p>{item.q}</p>
               {revealed[item.id] ? (
-                <p>{item.a}</p>
+                <p className="mt-1 border-l-2 border-ember pl-3">{item.a}</p>
               ) : (
                 <button
                   type="button"
+                  className="mt-1 border border-ink px-3 py-1.5"
                   onClick={() => {
                     setRevealed((prev) => ({ ...prev, [item.id]: true }));
                     progress.completeStage(slug, "recall");

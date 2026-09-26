@@ -9,11 +9,14 @@ export default async function ProblemPage(): Promise<ReactElement> {
   const { content } = await compileMDX({ source: problem.briefMdx });
   return (
     <main>
-      <h1>{problem.meta.title}</h1>
-      <section aria-label="Brief">{content}</section>
-      <section aria-label="Scale">
-        <h2>Scale (revealed on request in a real loop)</h2>
-        <ul>
+      <p className="mt-8 font-mono text-sm text-smoke">01 Brief</p>
+      <h1 className="mt-2 text-3xl font-bold tracking-tight">{problem.meta.title}</h1>
+      <section aria-label="Brief">
+        <div className="prose mt-4 max-w-2xl leading-relaxed">{content}</div>
+      </section>
+      <section aria-label="Scale" className="mt-8 border-t border-ink/20 pt-4">
+        <h2 className="text-xl font-bold">Scale (revealed on request in a real loop)</h2>
+        <ul className="mt-3 space-y-1 font-mono text-sm">
           {Object.entries(problem.scale).map(([key, value]) => (
             <li key={key}>
               {key}: {String(value)}
@@ -21,20 +24,20 @@ export default async function ProblemPage(): Promise<ReactElement> {
           ))}
         </ul>
       </section>
-      <section aria-label="Clarifications">
-        <h2>Clarifications (revealed only if asked)</h2>
-        <ul>
+      <section aria-label="Clarifications" className="mt-8 border-t border-ink/20 pt-4">
+        <h2 className="text-xl font-bold">Clarifications (revealed only if asked)</h2>
+        <ul className="mt-3 space-y-2">
           {problem.clarifications.map((item) => (
-            <li key={item.q}>
+            <li key={item.q} className="border-b border-ink/10 pb-2">
               {item.q} — {item.a}
             </li>
           ))}
         </ul>
       </section>
-      <section aria-label="Design">
-        <h2>High-level design</h2>
-        <p>
-          Draw on the <Link href="/design">canvas</Link>, then paste the topology here.
+      <section aria-label="Design" className="mt-8 border-t border-ink/20 pt-4">
+        <h2 className="text-xl font-bold">High-level design</h2>
+        <p className="mt-3">
+          Draw on the <Link href="/design" className="hover:text-ember">canvas</Link>, then paste the topology here.
         </p>
       </section>
       <GradeForm rubric={problem.rubric} scenarios={problem.scenarios} />

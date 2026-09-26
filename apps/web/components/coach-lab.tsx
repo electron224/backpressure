@@ -6,6 +6,8 @@ import { compileFlow } from "@backpressure/canvas";
 import { runPreset } from "@backpressure/concept-engine";
 import type { Topology } from "@backpressure/concept-engine";
 import { runChecks } from "@backpressure/coach/checks";
+import { CanvasEditor } from "./canvas-editor";
+import type { EditorGraph } from "./canvas-editor";
 import { MetricTable } from "./metric-table";
 import { MetricChart } from "./metric-chart";
 
@@ -14,11 +16,20 @@ interface CoachProbe {
   why: string;
 }
 
-const STARTER =
-  '{"nodes": [{"id": "lb", "kind": "lb", "config": {}}, {"id": "web-a", "kind": "service", "config": {}}, {"id": "web-b", "kind": "service", "config": {}}], "edges": [{"from": "lb", "to": "web-a"}, {"from": "lb", "to": "web-b"}]}';
+const STARTER: EditorGraph = {
+  nodes: [
+    { id: "lb", kind: "lb" },
+    { id: "web-a", kind: "service" },
+    { id: "web-b", kind: "service" },
+  ],
+  edges: [
+    { from: "lb", to: "web-a" },
+    { from: "lb", to: "web-b" },
+  ],
+};
 
 export function CoachLab(): JSX.Element {
-  const [text, setText] = useState<string>(STARTER);
+  const [graph, setGraph] = useState<EditorGraph>(STARTER);
   const [rps, setRps] = useState<number>(100);
   const [ran, setRan] = useState<{ p99: number; verdict: "PASS" | "FAIL"; narration: string; series: { t: number; p99: number; throughput: number; errors: number }[] } | null>(null);
   const [topology, setTopology] = useState<Topology | null>(null);
@@ -29,12 +40,9 @@ export function CoachLab(): JSX.Element {
 
   function run(): void {
     try {
-      const parsed: unknown = JSON.parse(text);
-      if (typeof parsed !== "object" || parsed === null) throw new Error("topology must be a JSON object");
-      const record = parsed as { nodes?: { id: string; type?: string; kind?: string }[]; edges?: { from?: string; to?: string; source?: string; target?: string }[] };
       const compiled = compileFlow(
-        (record.nodes ?? []).map((node) => ({ id: node.id, kind: node.type ?? node.kind ?? "service", config: {} })),
-        (record.edges ?? []).map((edge) => ({ from: edge.from ?? edge.source ?? "", to: edge.to ?? edge.target ?? "" })),
+        graph.nodes.map((node) => ({ id: node.id, kind: node.kind, config: {} })),
+        graph.edges,
       );
       const preset = {
         id: "coach-critique",
@@ -111,17 +119,11 @@ export function CoachLab(): JSX.Element {
     <div>
       <section aria-label="Topology" className="mt-8 border-t border-ink/20 pt-4">
         <h2 className="text-xl font-bold">
-          <span className="mr-3 font-mono text-sm font-normal text-smoke">01</span>Paste a design
+          <span className="mr-3 font-mono text-sm font-normal text-smoke">01</span>Draw a design
         </h2>
-        <label className="mt-3 block">
-          Topology JSON
-          <textarea
-            className="mt-1 block w-full border border-ink/30 bg-paper p-2 font-mono text-sm"
-            rows={8}
-            value={text}
-            onChange={(e) => setText(e.currentTarget.value)}
-          />
-        </label>
+        <div className="mt-3">
+          <CanvasEditor initial={STARTER} onChange={setGraph} />
+        </div>
         <label className="mt-3 block max-w-xl">
           Traffic (RPS): {rps}
           <input

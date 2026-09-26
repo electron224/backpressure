@@ -1,23 +1,14 @@
 // apps/web/components/design-canvas.tsx
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
-import {
-  Background,
-  Controls,
-  ReactFlow,
-  addEdge,
-  applyEdgeChanges,
-  applyNodeChanges,
-} from "@xyflow/react";
-import type { Connection, Edge, EdgeChange, Node, NodeChange, NodeProps } from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
-import { compileFlow, paletteKinds } from "@backpressure/canvas";
+import { useState } from "react";
+import { compileFlow } from "@backpressure/canvas";
 import { runPreset } from "@backpressure/concept-engine";
 import { runChecks } from "@backpressure/coach/checks";
 import type { StructuralFinding } from "@backpressure/coach/checks";
+import { CanvasEditor } from "./canvas-editor";
+import type { EditorGraph } from "./canvas-editor";
 import { NarrationFeed } from "./narration-feed";
-import { useTheme } from "./theme-toggle";
 
 interface RunReport {
   rows: { label: string; p99: number; verdict: string; narration: string }[];
@@ -25,82 +16,30 @@ interface RunReport {
   error: string | null;
 }
 
-let nodeCounter = 0;
-
-function seedNodes(): Node[] {
-  return [
-    { id: "lb", type: "lb", position: { x: 50, y: 150 }, data: { label: "lb" } },
-    { id: "web-a", type: "service", position: { x: 350, y: 50 }, data: { label: "web-a" } },
-    { id: "web-b", type: "service", position: { x: 350, y: 250 }, data: { label: "web-b" } },
-  ];
+function seedGraph(): EditorGraph {
+  return {
+    nodes: [
+      { id: "lb", kind: "lb" },
+      { id: "web-a", kind: "service" },
+      { id: "web-b", kind: "service" },
+    ],
+    edges: [
+      { from: "lb", to: "web-a" },
+      { from: "lb", to: "web-b" },
+    ],
+  };
 }
-
-function seedEdges(): Edge[] {
-  return [
-    { id: "e-lb-a", source: "lb", target: "web-a" },
-    { id: "e-lb-b", source: "lb", target: "web-b" },
-  ];
-}
-
-function SimNode({ data, type }: NodeProps): JSX.Element {
-  const label = typeof data?.label === "string" ? data.label : "node";
-  return (
-    <div className="border-2 border-ink bg-paper px-3 py-2 shadow-none">
-      <div className="font-mono text-[10px] uppercase tracking-wide text-smoke">{type}</div>
-      <div className="text-sm font-bold">{label}</div>
-    </div>
-  );
-}
-
-const NODE_TYPES = {
-  lb: SimNode,
-  service: SimNode,
-  "rate-limiter": SimNode,
-  cache: SimNode,
-  database: SimNode,
-  "shard-router": SimNode,
-  dedup: SimNode,
-  pipe: SimNode,
-  queue: SimNode,
-  "fan-out": SimNode,
-};
 
 export function DesignCanvas(): JSX.Element {
-  const [nodes, setNodes] = useState<Node[]>(seedNodes);
-  const [edges, setEdges] = useState<Edge[]>(seedEdges);
+  const [graph, setGraph] = useState<EditorGraph>(seedGraph);
   const [rps, setRps] = useState<number>(100);
   const [report, setReport] = useState<RunReport | null>(null);
-
-  const onNodesChange = useCallback(
-    (changes: NodeChange[]) => setNodes((current) => applyNodeChanges(changes, current)),
-    [],
-  );
-  const onEdgesChange = useCallback(
-    (changes: EdgeChange[]) => setEdges((current) => applyEdgeChanges(changes, current)),
-    [],
-  );
-  const onConnect = useCallback(
-    (connection: Connection) => setEdges((current) => addEdge(connection, current)),
-    [],
-  );
-
-  const palette = useMemo(() => paletteKinds(), []);
-  const theme = useTheme();
-
-  function addNode(kind: string): void {
-    nodeCounter += 1;
-    const id = `${kind}-${nodeCounter}`;
-    setNodes((current) => [
-      ...current,
-      { id, type: kind, position: { x: 50 + (nodeCounter % 5) * 40, y: 50 + (nodeCounter % 5) * 40 }, data: { label: id } },
-    ]);
-  }
 
   function runDesign(): void {
     try {
       const topology = compileFlow(
-        nodes.map((node) => ({ id: node.id, kind: node.type ?? "service", config: {} })),
-        edges.map((edge) => ({ from: edge.source, to: edge.target })),
+        graph.nodes.map((node) => ({ id: node.id, kind: node.kind, config: {} })),
+        graph.edges,
       );
       const preset = {
         id: "canvas-design",
@@ -122,34 +61,11 @@ export function DesignCanvas(): JSX.Element {
 
   return (
     <div>
-      <section aria-label="Palette" className="mt-8 border-t border-ink/20 pt-4">
-        <h2 className="text-xl font-bold">Palette (constrained: simulatable nodes only)</h2>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {palette.map((kind) => (
-            <button key={kind} type="button" className="border border-ink px-3 py-1.5 font-mono text-sm" onClick={() => addNode(kind)}>
-              Add {kind}
-            </button>
-          ))}
-        </div>
-      </section>
       <section aria-label="Canvas" className="mt-8 border-t border-ink/20 pt-4">
         <h2 className="text-xl font-bold">Canvas</h2>
-        <div className="bp-flow mt-3 border border-ink/20" style={{ height: 400 }}>
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            nodeTypes={NODE_TYPES}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
-            fitView
-            colorMode={theme}
-          >
-            <Background gap={24} />
-            <Controls />
-          </ReactFlow>
+        <div className="mt-3">
+          <CanvasEditor initial={seedGraph()} onChange={setGraph} />
         </div>
-        <p className="mt-2 font-mono text-xs text-smoke">drag to move, drag between handles to connect, select + Backspace deletes</p>
       </section>
       <section aria-label="Run" className="mt-8 border-t border-ink/20 pt-4">
         <h2 className="text-xl font-bold">Run</h2>

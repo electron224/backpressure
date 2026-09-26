@@ -6,6 +6,8 @@ import { compileFlow } from "@backpressure/canvas";
 import { gradeWith } from "@backpressure/coach/grade-core";
 import type { GradeDimension, GradeReport, ScenarioDef } from "@backpressure/coach/grade-core";
 import type { Topology } from "@backpressure/concept-engine";
+import { CanvasEditor } from "./canvas-editor";
+import type { EditorGraph } from "./canvas-editor";
 
 const RUNGS = [
   { id: "rung-1", name: "Rung 1: launch traffic", factor: 1 },
@@ -13,8 +15,26 @@ const RUNGS = [
   { id: "rung-3", name: "Rung 3: 100x scale", factor: 100 },
 ];
 
+const STARTER: EditorGraph = {
+  nodes: [
+    { id: "lb", kind: "lb" },
+    { id: "api", kind: "service" },
+  ],
+  edges: [{ from: "lb", to: "api" }],
+};
+
 function scaleScenarios(scenarios: ScenarioDef[], factor: number): ScenarioDef[] {
   return scenarios.map((scenario) => ({ ...scenario, rps: scenario.rps * factor }));
+}
+
+function parseGraph(text: string): EditorGraph {
+  const parsed: unknown = JSON.parse(text);
+  if (typeof parsed !== "object" || parsed === null) throw new Error("topology must be a JSON object");
+  const record = parsed as { nodes?: { id: string; type?: string; kind?: string }[]; edges?: { from?: string; to?: string; source?: string; target?: string }[] };
+  return {
+    nodes: (record.nodes ?? []).map((node) => ({ id: node.id, kind: node.type ?? node.kind ?? "service" })),
+    edges: (record.edges ?? []).map((edge) => ({ from: edge.from ?? edge.source ?? "", to: edge.to ?? edge.target ?? "" })),
+  };
 }
 
 export function ScaleLadder({
@@ -27,9 +47,7 @@ export function ScaleLadder({
   scenarios: ScenarioDef[];
 }): JSX.Element {
   const [rungIndex, setRungIndex] = useState<number>(0);
-  const [text, setText] = useState<string>(
-    '{"nodes": [{"id": "lb", "kind": "lb", "config": {}}, {"id": "api", "kind": "service", "config": {}}], "edges": [{"from": "lb", "to": "api"}]}',
-  );
+  const [graph, setGraph] = useState<EditorGraph>(STARTER);
   const [reports, setReports] = useState<(GradeReport | null)[]>([null, null, null]);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,21 +62,15 @@ export function ScaleLadder({
       return;
     }
     try {
-      const parsed: unknown = JSON.parse(text);
-      if (typeof parsed !== "object" || parsed === null) throw new Error("topology must be a JSON object");
-      const record = parsed as { nodes?: { id: string; type?: string; kind?: string }[]; edges?: { from?: string; to?: string; source?: string; target?: string }[] };
       const topology: Topology = compileFlow(
-        (record.nodes ?? []).map((node) => ({ id: node.id, kind: node.type ?? node.kind ?? "service", config: {} })),
-        (record.edges ?? []).map((edge) => ({
-          from: edge.from ?? edge.source ?? "",
-          to: edge.to ?? edge.target ?? "",
-        })),
+        graph.nodes.map((node) => ({ id: node.id, kind: node.kind, config: {} })),
+        graph.edges,
       );
       const report = gradeWith(topology, rubric, scaleScenarios(scenarios, current.factor));
       setReports((prev) => prev.map((existing, i) => (i === rungIndex ? report : existing)));
       setError(null);
       try {
-        window.localStorage.setItem(`bp:ladder:${slug}:${current.id}`, text);
+        window.localStorage.setItem(`bp:ladder:${slug}:${current.id}`, JSON.stringify(graph));
       } catch {
         // Private mode: carry-forward simply does not persist.
       }
@@ -77,9 +89,9 @@ export function ScaleLadder({
     }
     try {
       const saved = window.localStorage.getItem(`bp:ladder:${slug}:${target.id}`);
-      if (saved !== null) setText(saved);
+      if (saved !== null) setGraph(parseGraph(saved));
     } catch {
-      // No saved topology: keep current text as the carry-forward.
+      // No saved topology: keep current graph as the carry-forward.
     }
   }
 
@@ -104,16 +116,9 @@ export function ScaleLadder({
           Evolve the same design upward. Your topology carries forward between rungs — the numbers decide if it
           survives growth.
         </p>
-        <label className="mt-3 block">
-          Topology JSON
-          <textarea
-            className="mt-1 block w-full border border-ink/30 bg-paper p-2 font-mono text-sm"
-            rows={8}
-            cols={60}
-            value={text}
-            onChange={(e) => setText(e.currentTarget.value)}
-          />
-        </label>
+        <div className="mt-3">
+          <CanvasEditor key={rung.id} initial={graph} onChange={setGraph} />
+        </div>
         <button type="button" className="mt-3 border border-ember bg-ember px-3 py-1.5 text-paper" onClick={gradeRung}>
           Grade rung {rungIndex + 1}
         </button>

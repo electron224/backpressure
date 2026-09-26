@@ -62,7 +62,8 @@ export default async function ProblemPage({ params }: { params: { slug: string }
       <section aria-label="Design" className="mt-8 border-t border-ink/20 pt-4">
         <h2 className="text-xl font-bold">High-level design</h2>
         <p className="mt-3">
-          Draw on the <Link href="/design" className="hover:text-ember">canvas</Link>, then run the timed loop below.
+          Draw on the <Link href="/design" className="hover:text-ember">canvas</Link>, then run the timed loop below — or
+          climb the <Link href={`/problems/${params.slug}/ladder`} className="hover:text-ember">scale ladder</Link>.
         </p>
       </section>
       <InterviewFlow

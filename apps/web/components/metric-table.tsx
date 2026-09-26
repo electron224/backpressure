@@ -1,5 +1,4 @@
-// apps/web/components/metric-table.tsx
-"use client";
+import { NarrationFeed } from "./narration-feed";
 
 export interface LabRow {
   strategy: string;
@@ -27,7 +26,9 @@ export function MetricTable({ rows }: { rows: LabRow[] }): JSX.Element {
               <th scope="row" className="px-3 py-2 text-left font-bold">{row.strategy}</th>
               <td className="px-3 py-2 tabular-nums">{Math.round(row.p99)}</td>
               <td className={row.verdict === "FAIL" ? "px-3 py-2 font-bold text-ember" : "px-3 py-2"}>{row.verdict}</td>
-              <td className="max-w-md px-3 py-2 text-xs leading-relaxed">{row.narration}</td>
+              <td className="max-w-md px-3 py-2 text-xs leading-relaxed">
+              <NarrationFeed narration={row.narration} />
+            </td>
             </tr>
           ))}
         </tbody>

@@ -13,4 +13,21 @@
   input[type="range"] {
     accent-color: #b03a2e;
   }
+  .bp-flow .react-flow__edge-path {
+    stroke: #1c2530;
+    stroke-width: 2;
+  }
+  .bp-flow .react-flow__handle {
+    background: #b03a2e;
+    border: 2px solid #f7f8f7;
+    width: 10px;
+    height: 10px;
+  }
+  .bp-flow .react-flow__node.selected .border-ink {
+    outline: 2px solid #b03a2e;
+    outline-offset: 2px;
+  }
+  .bp-flow .react-flow__controls-button {
+    border-bottom: 1px solid rgba(28, 37, 48, 0.2);
+  }
 }

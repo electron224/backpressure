@@ -26,13 +26,16 @@ interface TranscriptEntry {
   at: number;
 }
 
-// Estimation accept bands derived from scale.json (order-of-magnitude
-// tolerance): 10M DAU, 1M writes/day.
-function checkEstimation(qps: number, storageGb: number, bandwidthMbps: number): string[] {
+function checkEstimation(
+  qps: number,
+  storageGb: number,
+  bandwidthMbps: number,
+  bands: { qps: [number, number]; storageGb: [number, number]; bandwidthMbps: [number, number] },
+): string[] {
   const notes: string[] = [];
-  if (!(qps >= 100 && qps <= 20000)) notes.push(`Read QPS ${qps} looks off: ~1.2k expected from 1M writes/day at 100:1.`);
-  if (!(storageGb >= 100 && storageGb <= 10000)) notes.push(`Storage ${storageGb}GB looks off: ~1TB for 5 years at ~530B per URL.`);
-  if (!(bandwidthMbps >= 1 && bandwidthMbps <= 1000)) notes.push(`Bandwidth ${bandwidthMbps}Mbps looks off: check bytes × QPS arithmetic.`);
+  if (!(qps >= bands.qps[0] && qps <= bands.qps[1])) notes.push(`Read QPS ${qps} looks off for these scale numbers: recheck posts/day times ratio.`);
+  if (!(storageGb >= bands.storageGb[0] && storageGb <= bands.storageGb[1])) notes.push(`Storage ${storageGb}GB looks off: recheck bytes per record times retention.`);
+  if (!(bandwidthMbps >= bands.bandwidthMbps[0] && bandwidthMbps <= bands.bandwidthMbps[1])) notes.push(`Bandwidth ${bandwidthMbps}Mbps looks off: check bytes times QPS arithmetic.`);
   return notes;
 }
 
@@ -46,10 +49,12 @@ export function InterviewFlow({
   slug,
   rubric,
   scenarios,
+  estimationBands = { qps: [100, 20000], storageGb: [100, 10000], bandwidthMbps: [1, 1000] },
 }: {
   slug: string;
   rubric: { dimensions: GradeDimension[] };
   scenarios: ScenarioDef[];
+  estimationBands?: { qps: [number, number]; storageGb: [number, number]; bandwidthMbps: [number, number] };
 }): JSX.Element {
   const [phaseIndex, setPhaseIndex] = useState<number>(0);
   const [secondsLeft, setSecondsLeft] = useState<number>(PHASES[0]?.minutes === undefined ? 300 : PHASES[0].minutes * 60);
@@ -109,8 +114,8 @@ export function InterviewFlow({
   }
 
   const estimationNotes = useMemo(
-    () => checkEstimation(Number(qps) || 0, Number(storageGb) || 0, Number(bandwidthMbps) || 0),
-    [qps, storageGb, bandwidthMbps],
+    () => checkEstimation(Number(qps) || 0, Number(storageGb) || 0, Number(bandwidthMbps) || 0, estimationBands),
+    [qps, storageGb, bandwidthMbps, estimationBands],
   );
 
   const weakest = useMemo(() => {

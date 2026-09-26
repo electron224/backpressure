@@ -10,12 +10,13 @@ import {
   applyEdgeChanges,
   applyNodeChanges,
 } from "@xyflow/react";
-import type { Connection, Edge, EdgeChange, Node, NodeChange } from "@xyflow/react";
+import type { Connection, Edge, EdgeChange, Node, NodeChange, NodeProps } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { compileFlow, paletteKinds } from "@backpressure/canvas";
 import { runPreset } from "@backpressure/concept-engine";
 import { runChecks } from "@backpressure/coach/checks";
 import type { StructuralFinding } from "@backpressure/coach/checks";
+import { NarrationFeed } from "./narration-feed";
 
 interface RunReport {
   rows: { label: string; p99: number; verdict: string; narration: string }[];
@@ -39,6 +40,29 @@ function seedEdges(): Edge[] {
     { id: "e-lb-b", source: "lb", target: "web-b" },
   ];
 }
+
+function SimNode({ data, type }: NodeProps): JSX.Element {
+  const label = typeof data?.label === "string" ? data.label : "node";
+  return (
+    <div className="border-2 border-ink bg-paper px-3 py-2 shadow-none">
+      <div className="font-mono text-[10px] uppercase tracking-wide text-smoke">{type}</div>
+      <div className="text-sm font-bold">{label}</div>
+    </div>
+  );
+}
+
+const NODE_TYPES = {
+  lb: SimNode,
+  service: SimNode,
+  "rate-limiter": SimNode,
+  cache: SimNode,
+  database: SimNode,
+  "shard-router": SimNode,
+  dedup: SimNode,
+  pipe: SimNode,
+  queue: SimNode,
+  "fan-out": SimNode,
+};
 
 export function DesignCanvas(): JSX.Element {
   const [nodes, setNodes] = useState<Node[]>(seedNodes);
@@ -108,12 +132,22 @@ export function DesignCanvas(): JSX.Element {
       </section>
       <section aria-label="Canvas" className="mt-8 border-t border-ink/20 pt-4">
         <h2 className="text-xl font-bold">Canvas</h2>
-        <div className="mt-3 border border-ink/20" style={{ height: 400 }}>
-          <ReactFlow nodes={nodes} edges={edges} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} fitView>
-            <Background />
+        <div className="bp-flow mt-3 border border-ink/20" style={{ height: 400 }}>
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            nodeTypes={NODE_TYPES}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            fitView
+            colorMode="light"
+          >
+            <Background gap={24} />
             <Controls />
           </ReactFlow>
         </div>
+        <p className="mt-2 font-mono text-xs text-smoke">drag to move, drag between handles to connect, select + Backspace deletes</p>
       </section>
       <section aria-label="Run" className="mt-8 border-t border-ink/20 pt-4">
         <h2 className="text-xl font-bold">Run</h2>
@@ -149,7 +183,9 @@ export function DesignCanvas(): JSX.Element {
                       <th scope="row" className="px-3 py-2 text-left font-bold">{row.label}</th>
                       <td className="px-3 py-2 tabular-nums">{Math.round(row.p99)}</td>
                       <td className={row.verdict === "FAIL" ? "px-3 py-2 font-bold text-ember" : "px-3 py-2"}>{row.verdict}</td>
-                      <td className="max-w-md px-3 py-2 text-xs leading-relaxed">{row.narration}</td>
+                      <td className="max-w-md px-3 py-2 text-xs leading-relaxed">
+                        <NarrationFeed narration={row.narration} />
+                      </td>
                     </tr>
                   ))}
                 </tbody>

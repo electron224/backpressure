@@ -17,6 +17,7 @@ import type { LabRow } from "./metric-table";
 import { MetricChart } from "./metric-chart";
 import { RequestWaterfall } from "./request-waterfall";
 import { TopologyDiagram } from "./topology-diagram";
+import { Glossary } from "./glossary";
 
 const SEED = 7;
 
@@ -180,6 +181,7 @@ export function ConceptLab({
         <h2 className="text-xl font-bold">
           <span className="mr-3 font-mono text-sm font-normal text-smoke">02</span>Play
         </h2>
+        <Glossary />
         {preset.controls.map((control) =>
           control.kind === "select" ? (
             <label key={control.id} className="mt-3 block max-w-xl">

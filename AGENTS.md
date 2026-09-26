@@ -50,7 +50,7 @@ Do not introduce new frameworks, state managers, ORMs or UI kits without asking.
 | Content | MDX + typed frontmatter, in `content/` | |
 | DB | Postgres + Drizzle ORM | |
 | Auth | Auth.js (email magic link + GitHub) | |
-| LLM | Anthropic API, server-side only, `packages/coach` | never called from the client |
+| LLM | Provider interface, Anthropic default; OpenAI-compatible + Gemini supported, server-side only, `packages/coach` | never called from the client |
 | Tests | Vitest (unit), Playwright (e2e) | |
 | Deploy | Vercel + Neon | |
 

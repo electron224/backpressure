@@ -3,18 +3,16 @@ import { readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
-import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import type { Topology } from "@backpressure/concept-engine";
+import { buildProvider, selectProviderName } from "./providers.js";
 
 // Server-only module: never import from client components. The API key
 // stays here. Bump RUBRIC_VERSION whenever prompts/ change so cached
 // grades invalidate.
 export const RUBRIC_VERSION = "v1";
-const MODEL = "claude-sonnet-4-20250514";
 const MAX_SESSION_USD = 0.5;
-const INPUT_USD_PER_MTOK = 3;
-const OUTPUT_USD_PER_MTOK = 15;
+const MAX_TOKENS = 800;
 
 export const CoachFeedbackSchema = z.object({
   summary: z.string().min(1),
@@ -49,9 +47,9 @@ function loadPrompt(): string {
   return readFileSync(join(here, "..", "prompts", "v1", "deep-dive.md"), "utf8");
 }
 
-function hashKey(input: Omit<CoachInput, "attemptId" | "transcript">): string {
+function hashKey(provider: string, model: string, input: Omit<CoachInput, "attemptId" | "transcript">): string {
   return createHash("sha256")
-    .update(JSON.stringify([input.problem, input.phase, input.topology, input.weakness, input.structural, input.verdicts, RUBRIC_VERSION, MODEL]))
+    .update(JSON.stringify([provider, model, input.problem, input.phase, input.topology, input.weakness, input.structural, input.verdicts, RUBRIC_VERSION]))
     .digest("hex");
 }
 
@@ -60,7 +58,7 @@ const spendByAttempt = new Map<string, number>();
 
 function fallback(): CoachFeedback {
   return {
-    summary: "Coach unavailable: set ANTHROPIC_API_KEY to enable grounded deep-dive probes. Deterministic grades above stand on their own.",
+    summary: "Coach unavailable: set ANTHROPIC_API_KEY, OPENAI_API_KEY, or GOOGLE_GENERATIVE_AI_API_KEY to enable grounded deep-dive probes. Deterministic grades above stand on their own.",
     probes: [{ question: "What number in your run most surprised you, and why?", why: "Self-review without a model fallback." }],
   };
 }
@@ -70,9 +68,10 @@ function fenceLearnerData(input: CoachInput): string {
 }
 
 export async function coachDeepDive(input: CoachInput): Promise<CoachResult> {
-  const apiKey = process.env["ANTHROPIC_API_KEY"];
-  if (!apiKey) return { feedback: fallback(), cached: false, grounded: false };
-  const key = hashKey(input);
+  const providerName = selectProviderName();
+  if (providerName === null) return { feedback: fallback(), cached: false, grounded: false };
+  const provider = buildProvider(providerName);
+  const key = hashKey(provider.name, provider.model, input);
   const hit = cache.get(key);
   if (hit !== undefined) return { feedback: hit, cached: true, grounded: true };
 
@@ -84,24 +83,15 @@ export async function coachDeepDive(input: CoachInput): Promise<CoachResult> {
   const prompt = `${loadPrompt()}\n\nPROBLEM: ${input.problem}\nPHASE: ${input.phase}\nWEAKNESS: ${
     input.weakness
   }\nSTRUCTURAL: ${JSON.stringify(input.structural)}\nVERDICTS: ${JSON.stringify(input.verdicts)}\n${fenceLearnerData(input)}`;
-  const client = new Anthropic({ apiKey });
 
   let raw = "";
+  let completion = { text: "", inputTokens: 0, outputTokens: 0 };
   for (let attempt = 0; attempt < 2; attempt += 1) {
-    const response = await client.messages.create({
-      model: MODEL,
-      max_tokens: 800,
-      messages: [{ role: "user", content: prompt }],
-    });
-    raw = response.content
-      .filter((block): block is { type: "text"; text: string } => block.type === "text")
-      .map((block) => block.text)
-      .join("\n");
+    completion = await provider.complete(prompt, MAX_TOKENS);
+    raw = completion.text;
     const parsed = CoachFeedbackSchema.safeParse(extractJson(raw));
     if (parsed.success) {
-      const usage = response.usage;
-      const cost =
-        (usage.input_tokens / 1_000_000) * INPUT_USD_PER_MTOK + (usage.output_tokens / 1_000_000) * OUTPUT_USD_PER_MTOK;
+      const cost = provider.priceUsd(completion.inputTokens, completion.outputTokens);
       spendByAttempt.set(input.attemptId, spent + cost);
       cache.set(key, parsed.data);
       return { feedback: parsed.data, cached: false, grounded: true };

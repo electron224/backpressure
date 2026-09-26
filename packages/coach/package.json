@@ -8,5 +8,9 @@
     "./checks": "./src/checks.ts",
     "./grade-core": "./src/grade-core.ts"
   },
-  "dependencies": { "@backpressure/concept-engine": "workspace:*" }
+  "dependencies": {
+    "@anthropic-ai/sdk": "0.32.1",
+    "@backpressure/concept-engine": "workspace:*",
+    "zod": "3.23.8"
+  }
 }

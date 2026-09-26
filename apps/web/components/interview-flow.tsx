@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { GradeForm } from "./grade-form";
 import type { GradeDimension, GradeReport, ScenarioDef } from "@backpressure/coach/grade-core";
+import type { Topology } from "@backpressure/concept-engine";
 
 export interface InterviewPhase {
   id: string;
@@ -63,6 +64,10 @@ export function InterviewFlow({
   const [deepDiveAnswer, setDeepDiveAnswer] = useState<string>("");
   const [deepDiveDone, setDeepDiveDone] = useState<boolean>(false);
   const [report, setReport] = useState<GradeReport | null>(null);
+  const [topology, setTopology] = useState<Topology | null>(null);
+  const [coachState, setCoachState] = useState<{ summary: string; probes: { question: string; why: string }[] } | null>(null);
+  const [coachError, setCoachError] = useState<string | null>(null);
+  const [coachLoading, setCoachLoading] = useState<boolean>(false);
 
   const phase = PHASES[phaseIndex];
   if (phase === undefined) throw new Error("interview phase out of range");
@@ -119,6 +124,59 @@ export function InterviewFlow({
     }
     return worst;
   }, [report]);
+
+  async function askCoach(): Promise<void> {
+    if (report === null || topology === null || weakest === null) return;
+    setCoachLoading(true);
+    setCoachError(null);
+    try {
+      const response = await fetch("/api/coach", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          problem: slug,
+          phase: "deep-dive",
+          topology,
+          weakness: weakest.id,
+          structural: report.structural,
+          verdicts: report.verdicts,
+          transcript,
+          attemptId: `local-${slug}`,
+        }),
+      });
+      const body: unknown = await response.json();
+      if (!response.ok) {
+        setCoachError(typeof body === "object" && body !== null && "error" in body ? String((body as { error: unknown }).error) : "coach request failed");
+        return;
+      }
+      const feedback: unknown = (body as { feedback?: unknown }).feedback;
+      if (
+        typeof feedback === "object" &&
+        feedback !== null &&
+        "summary" in feedback &&
+        "probes" in feedback &&
+        typeof (feedback as { summary: unknown }).summary === "string" &&
+        Array.isArray((feedback as { probes: unknown }).probes)
+      ) {
+        const probes = (feedback as { probes: unknown[] }).probes
+          .filter(
+            (probe): probe is { question: string; why: string } =>
+              typeof probe === "object" &&
+              probe !== null &&
+              typeof (probe as { question: unknown }).question === "string" &&
+              typeof (probe as { why: unknown }).why === "string",
+          )
+          .map((probe) => ({ question: probe.question, why: probe.why }));
+        setCoachState({ summary: (feedback as { summary: string }).summary, probes });
+      } else {
+        setCoachError("coach returned an unshaped response");
+      }
+    } catch (error) {
+      setCoachError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setCoachLoading(false);
+    }
+  }
 
   const minutes = Math.floor(secondsLeft / 60);
   const seconds = secondsLeft % 60;
@@ -275,6 +333,7 @@ export function InterviewFlow({
               setReport(grade);
               log("design", { total: grade.total });
             }}
+            onTopology={(topo) => setTopology(topo)}
           />
           <button
             type="button"
@@ -290,10 +349,31 @@ export function InterviewFlow({
       {phase.id === "deep-dive" && (
         <section aria-label="Deep dive" className="mt-8 border-t border-ink/20 pt-4">
           <h2 className="text-xl font-bold">Deep dive</h2>
-          {report === null || weakest === null ? (
+          {report === null || weakest === null || topology === null ? (
             <p className="mt-3">Grade a design first: the probe targets your weakest dimension.</p>
           ) : (
             <>
+              <button
+                type="button"
+                className="mt-3 border border-ember bg-ember px-3 py-1.5 text-paper disabled:opacity-50"
+                disabled={coachLoading}
+                onClick={() => void askCoach()}
+              >
+                {coachLoading ? "Asking coach…" : "Ask coach for probes"}
+              </button>
+              {coachError !== null && <p className="mt-2 font-bold text-ember">{coachError}</p>}
+              {coachState !== null && (
+                <div className="mt-3 max-w-2xl">
+                  <p className="leading-relaxed">{coachState.summary}</p>
+                  <ul className="mt-2 space-y-2">
+                    {coachState.probes.map((probe) => (
+                      <li key={probe.question} className="border-b border-ink/10 pb-2">
+                        {probe.question} <span className="text-sm text-smoke">({probe.why})</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               <p className="mt-3 max-w-2xl leading-relaxed">
                 {DEEP_DIVE_PROBES[weakest.id] ?? "Defend your weakest dimension with numbers from your run."}
               </p>

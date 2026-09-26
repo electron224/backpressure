@@ -37,6 +37,7 @@ export interface GradeReport {
   dimensions: { id: string; weight: number; earned: number; possible: number }[];
   criteria: CriterionResult[];
   structural: StructuralFinding[];
+  verdicts: { id: string; passed: boolean; observed: number }[];
   total: number;
   llmNote: string;
 }
@@ -67,6 +68,7 @@ export function gradeWith(
 
   const criteria: CriterionResult[] = [];
   const structural: StructuralFinding[] = [];
+  const verdicts: { id: string; passed: boolean; observed: number }[] = [];
   const dimensions = rubric.dimensions.map((dimension) => {
     let earned = 0;
     let possible = 0;
@@ -84,6 +86,7 @@ export function gradeWith(
         const result = runPreset(asPreset("grade", topology, baseline.sloP99Ms), values);
         const got = result.verdict === "PASS" ? criterion.points : 0;
         earned += got;
+        verdicts.push({ id: "slo.p99:baseline", passed: result.verdict === "PASS", observed: Math.round(result.p99) });
         criteria.push({
           id: criterion.id,
           points: criterion.points,
@@ -101,6 +104,7 @@ export function gradeWith(
             { dropBackend: id },
           );
           if (result.verdict === "PASS") survived += 1;
+          verdicts.push({ id: `slo.p99:loss-${id}`, passed: result.verdict === "PASS", observed: Math.round(result.p99) });
         }
         const got = ids.length === 0 ? 0 : Math.round((criterion.points * survived) / ids.length);
         earned += got;
@@ -124,6 +128,7 @@ export function gradeWith(
     dimensions,
     criteria,
     structural,
+    verdicts,
     total,
     llmNote:
       "LLM coach unavailable without ANTHROPIC_API_KEY: subjective dimensions unscored. Deterministic total covers simulator-checkable criteria only.",

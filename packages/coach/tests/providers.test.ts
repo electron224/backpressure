@@ -28,7 +28,7 @@ describe("buildProvider", () => {
   it("names models and prices sane orders of magnitude", () => {
     const anthropic = buildProvider("anthropic", { ANTHROPIC_API_KEY: "x" });
     expect(anthropic.model).toContain("claude");
-    expect(anthropic.priceUsd(1_000_000, 1_000_000)).toBeCloseTo(18, 0);
+    expect(anthropic.priceUsd(1_000_000, 1_000_000)).toBeCloseTo(12, 0);
     const openai = buildProvider("openai", { OPENAI_API_KEY: "x" });
     expect(openai.priceUsd(1_000_000, 1_000_000)).toBeLessThan(anthropic.priceUsd(1_000_000, 1_000_000));
     const google = buildProvider("google", { GEMINI_API_KEY: "x" });

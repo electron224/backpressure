@@ -91,7 +91,7 @@ function anthropicProvider(apiKey: string, model: string): ChatProvider {
         .join("\n");
       return { text, inputTokens: response.usage.input_tokens, outputTokens: response.usage.output_tokens };
     },
-    priceUsd: (inputTokens, outputTokens) => (inputTokens / 1_000_000) * 3 + (outputTokens / 1_000_000) * 15,
+    priceUsd: (inputTokens, outputTokens) => (inputTokens / 1_000_000) * 2 + (outputTokens / 1_000_000) * 10,
   };
 }
 
@@ -146,19 +146,19 @@ function googleProvider(apiKey: string, model: string): ChatProvider {
       const outputTokens = typeof usage?.candidatesTokenCount === "number" ? usage.candidatesTokenCount : 0;
       return { text, inputTokens, outputTokens };
     },
-    priceUsd: (inputTokens, outputTokens) => (inputTokens / 1_000_000) * 0.1 + (outputTokens / 1_000_000) * 0.4,
+    priceUsd: (inputTokens, outputTokens) => (inputTokens / 1_000_000) * 0.75 + (outputTokens / 1_000_000) * 3.75,
   };
 }
 
 export function buildProvider(name: ProviderName, env: ProviderEnv = readEnv()): ChatProvider {
   if (name === "anthropic") {
     const apiKey = env.ANTHROPIC_API_KEY ?? "";
-    return anthropicProvider(apiKey, env.ANTHROPIC_MODEL ?? "claude-sonnet-4-20250514");
+    return anthropicProvider(apiKey, env.ANTHROPIC_MODEL ?? "claude-sonnet-5");
   }
   if (name === "openai") {
     const apiKey = env.OPENAI_API_KEY ?? "";
     return openaiProvider(apiKey, env.OPENAI_MODEL ?? "gpt-4o-mini", env.OPENAI_BASE_URL ?? "https://api.openai.com/v1");
   }
   const apiKey = env.GOOGLE_GENERATIVE_AI_API_KEY ?? env.GEMINI_API_KEY ?? "";
-  return googleProvider(apiKey, env.GEMINI_MODEL ?? "gemini-2.0-flash");
+  return googleProvider(apiKey, env.GEMINI_MODEL ?? "gemini-3.8-flash");
 }

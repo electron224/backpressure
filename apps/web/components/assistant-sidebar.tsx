@@ -159,12 +159,13 @@ export function AssistantSidebar(): JSX.Element {
                 <select
                   className="mt-1 block w-full border border-ink/30 bg-paper p-2"
                   value={keys.provider}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    const value = e.currentTarget.value;
                     setKeys((prev) => ({
                       ...prev,
-                      provider: e.currentTarget.value === "google" || e.currentTarget.value === "anthropic" ? e.currentTarget.value : "openai",
-                    }))
-                  }
+                      provider: value === "google" || value === "anthropic" ? value : "openai",
+                    }));
+                  }}
                 >
                   <option value="openai">OpenAI / compatible</option>
                   <option value="anthropic">Anthropic</option>
@@ -178,7 +179,10 @@ export function AssistantSidebar(): JSX.Element {
                   type="password"
                   autoComplete="off"
                   value={keys.apiKey}
-                  onChange={(e) => setKeys((prev) => ({ ...prev, apiKey: e.currentTarget.value }))}
+                  onChange={(e) => {
+                    const value = e.currentTarget.value;
+                    setKeys((prev) => ({ ...prev, apiKey: value }));
+                  }}
                 />
               </label>
               <label className="block">
@@ -189,7 +193,10 @@ export function AssistantSidebar(): JSX.Element {
                   inputMode="url"
                   placeholder="https://api.openai.com/v1"
                   value={keys.baseUrl}
-                  onChange={(e) => setKeys((prev) => ({ ...prev, baseUrl: e.currentTarget.value }))}
+                  onChange={(e) => {
+                    const value = e.currentTarget.value;
+                    setKeys((prev) => ({ ...prev, baseUrl: value }));
+                  }}
                 />
               </label>
               <label className="block">
@@ -198,7 +205,10 @@ export function AssistantSidebar(): JSX.Element {
                   className="mt-1 block w-full border border-ink/30 bg-paper p-2 font-mono text-sm"
                   type="text"
                   value={keys.model}
-                  onChange={(e) => setKeys((prev) => ({ ...prev, model: e.currentTarget.value }))}
+                  onChange={(e) => {
+                    const value = e.currentTarget.value;
+                    setKeys((prev) => ({ ...prev, model: value }));
+                  }}
                 />
               </label>
               <p className="font-mono text-xs text-smoke">

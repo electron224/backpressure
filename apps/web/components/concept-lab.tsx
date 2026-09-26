@@ -250,14 +250,14 @@ export function ConceptLab({
           />
         </label>
         {committed === null ? (
-          <button type="button" className="mt-3 border border-ember bg-ember px-3 py-1.5 text-paper" onClick={commitPrediction}>
+          <button type="button" className="mt-3 border border-ember bg-ember px-3 py-1.5 min-h-[44px] text-paper" onClick={commitPrediction}>
             Commit prediction and run
           </button>
         ) : (
           <p className="mt-3 max-w-xl leading-relaxed">
             You predicted {committed}ms; actual {Math.round(actual)}ms; error {Math.round(predictionError(committed, actual))}ms —{" "}
             {gradePrediction(predictionError(committed, actual)) ? "within 50ms, nice." : "off by more than 50ms."}{" "}
-            <button type="button" className="border border-ink px-3 py-1.5" onClick={() => setCommitted(null)}>
+            <button type="button" className="border border-ink px-3 py-1.5 min-h-[44px]" onClick={() => setCommitted(null)}>
               Predict again
             </button>
           </p>
@@ -272,7 +272,7 @@ export function ConceptLab({
           Kills a random backend or spikes traffic, so you can watch the survivor cope. Try it right after a clean
           run: compare the two tables and find what broke first.
         </p>
-        <button type="button" className="mt-3 border border-ink px-3 py-1.5" onClick={injectChaos}>
+        <button type="button" className="mt-3 border border-ink px-3 py-1.5 min-h-[44px]" onClick={injectChaos}>
           Inject random fault
         </button>
         <p className="mt-2">{chaosNote}</p>
@@ -286,7 +286,7 @@ export function ConceptLab({
           {challenges.map((c) => (
             <li key={c.id} className="border-b border-ink/10 py-2">
               {c.text} — verdict: {c.verdict} — live: {liveResult(c.id)}{" "}
-              <button type="button" className="ml-2 border border-ink px-3 py-1.5" onClick={() => attemptChallenge(c.id)}>
+              <button type="button" className="ml-2 border border-ink px-3 py-1.5 min-h-[44px]" onClick={() => attemptChallenge(c.id)}>
                 Attempt {c.id}
               </button>
             </li>
@@ -307,7 +307,7 @@ export function ConceptLab({
               ) : (
                 <button
                   type="button"
-                  className="mt-1 border border-ink px-3 py-1.5"
+                  className="mt-1 border border-ink px-3 py-1.5 min-h-[44px]"
                   onClick={() => {
                     setRevealed((prev) => ({ ...prev, [item.id]: true }));
                     progress.completeStage(slug, "recall");

@@ -119,7 +119,7 @@ export function ScaleLadder({
         <div className="mt-3">
           <CanvasEditor key={rung.id} initial={graph} onChange={setGraph} />
         </div>
-        <button type="button" className="mt-3 border border-ember bg-ember px-3 py-1.5 text-paper" onClick={gradeRung}>
+        <button type="button" className="mt-3 border border-ember bg-ember px-3 py-1.5 min-h-[44px] text-paper" onClick={gradeRung}>
           Grade rung {rungIndex + 1}
         </button>
       </section>

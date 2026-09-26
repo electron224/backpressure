@@ -202,7 +202,7 @@ export function InterviewFlow({
         </p>
         {skippedAhead && <p className="mt-1 text-sm text-ember">Skipped ahead early: flagged in your transcript.</p>}
         {phaseIndex < 3 && (
-          <button type="button" className="mt-2 border border-ink px-3 py-1.5 text-sm" onClick={skipToDesign}>
+          <button type="button" className="mt-2 border border-ink px-3 py-1.5 min-h-[44px] text-sm" onClick={skipToDesign}>
             Skip to design (flagged in transcript)
           </button>
         )}

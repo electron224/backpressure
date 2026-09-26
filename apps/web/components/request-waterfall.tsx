@@ -136,7 +136,7 @@ export function RequestWaterfall({
       <div className="flex flex-wrap items-center gap-3 border-t border-ink/10 px-3 py-2">
         <button
           type="button"
-          className="border border-ink px-3 py-1.5 text-sm"
+          className="border border-ink px-3 py-1.5 min-h-[44px] text-sm"
           onClick={() => {
             if (!playing && now >= windowEnd) restart();
             else setPlaying((p) => !p);
@@ -144,7 +144,7 @@ export function RequestWaterfall({
         >
           {playing ? "Pause" : now >= windowEnd ? "Replay" : "Play"}
         </button>
-        <button type="button" className="border border-ink px-3 py-1.5 text-sm" onClick={restart}>
+        <button type="button" className="border border-ink px-3 py-1.5 min-h-[44px] text-sm" onClick={restart}>
           Restart
         </button>
         <label className="font-mono text-sm">

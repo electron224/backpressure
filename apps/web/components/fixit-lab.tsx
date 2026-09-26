@@ -81,7 +81,7 @@ export function FixitLab({ fixit }: { fixit: Fixit }): JSX.Element {
         <div className="mt-3">
           <CanvasEditor key={fixit.id} initial={fixit.start} onChange={setGraph} />
         </div>
-        <button type="button" className="mt-3 border border-ember bg-ember px-3 py-1.5 text-paper" onClick={check}>
+        <button type="button" className="mt-3 border border-ember bg-ember px-3 py-1.5 min-h-[44px] text-paper" onClick={check}>
           Check the fix at {fixit.rps} RPS
         </button>
       </section>

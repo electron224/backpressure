@@ -73,7 +73,7 @@ export function DesignCanvas(): JSX.Element {
           Traffic (RPS): {rps}
           <input className="block w-full" type="range" min={10} max={300} value={rps} onChange={(e) => setRps(Number(e.currentTarget.value))} />
         </label>
-        <button type="button" className="mt-3 border border-ember bg-ember px-3 py-1.5 text-paper" onClick={runDesign}>
+        <button type="button" className="mt-3 border border-ember bg-ember px-3 py-1.5 min-h-[44px] text-paper" onClick={runDesign}>
           Run design
         </button>
       </section>

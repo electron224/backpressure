@@ -17,7 +17,7 @@ export default function Home(): JSX.Element {
   return (
     <main>
       <p className="mt-8 font-mono text-sm text-smoke">simulate, observe, explain</p>
-      <h1 className="mt-2 text-4xl font-bold tracking-tight">Learn system design by running it.</h1>
+      <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">Learn system design by running it.</h1>
       <p className="mt-3 max-w-2xl leading-relaxed">
         Each lab is a real simulation, not an animation. Move traffic, break things, predict the numbers, then watch
         what actually happens. Start at Tier 1 and work down — every track assumes the ones above it.

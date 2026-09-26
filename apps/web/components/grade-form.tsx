@@ -57,7 +57,7 @@ export function GradeForm({
         <div className="mt-3">
           <CanvasEditor initial={STARTER} onChange={setGraph} />
         </div>
-        <button type="button" className="mt-3 border border-ember bg-ember px-3 py-1.5 text-paper" onClick={grade}>
+        <button type="button" className="mt-3 border border-ember bg-ember px-3 py-1.5 min-h-[44px] text-paper" onClick={grade}>
           Grade submission
         </button>
       </section>

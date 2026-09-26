@@ -17,6 +17,7 @@ import { runPreset } from "@backpressure/concept-engine";
 import { runChecks } from "@backpressure/coach/checks";
 import type { StructuralFinding } from "@backpressure/coach/checks";
 import { NarrationFeed } from "./narration-feed";
+import { useTheme } from "./theme-toggle";
 
 interface RunReport {
   rows: { label: string; p99: number; verdict: string; narration: string }[];
@@ -84,6 +85,7 @@ export function DesignCanvas(): JSX.Element {
   );
 
   const palette = useMemo(() => paletteKinds(), []);
+  const theme = useTheme();
 
   function addNode(kind: string): void {
     nodeCounter += 1;
@@ -141,7 +143,7 @@ export function DesignCanvas(): JSX.Element {
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
             fitView
-            colorMode="light"
+            colorMode={theme}
           >
             <Background gap={24} />
             <Controls />

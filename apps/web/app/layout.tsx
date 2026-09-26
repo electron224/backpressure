@@ -1,10 +1,16 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import "./globals.css";
+import { ThemeToggle } from "../components/theme-toggle";
+
+const THEME_SCRIPT = `(function(){try{var t=localStorage.getItem("bp:theme");if(!t)t=window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";if(t==="dark")document.documentElement.classList.add("dark");}catch(e){}})();`;
 
 export default function RootLayout({ children }: { children: ReactNode }): JSX.Element {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       <body>
         <header className="bg-ink text-paper">
           <div className="mx-auto flex max-w-4xl flex-wrap items-baseline gap-x-6 gap-y-1 px-4 py-3">
@@ -16,6 +22,9 @@ export default function RootLayout({ children }: { children: ReactNode }): JSX.E
               <Link href="/design">Design canvas</Link>
               <Link href="/problems/design-url-shortener">Interview: URL shortener</Link>
             </nav>
+            <span className="ml-auto">
+              <ThemeToggle />
+            </span>
           </div>
           <div className="h-0.5 bg-ember" aria-hidden="true" />
         </header>

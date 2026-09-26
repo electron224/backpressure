@@ -28,7 +28,7 @@ export default async function ProblemPage({ params }: { params: { slug: string }
       <h1 className="mt-2 text-3xl font-bold tracking-tight">{problem.meta.title}</h1>
       <ReadinessBanner required={problem.meta.concepts_required} />
       <section aria-label="Brief">
-        <div className="prose mt-4 max-w-2xl leading-relaxed">{content}</div>
+        <div className="prose mt-4 max-w-2xl leading-relaxed dark:prose-invert">{content}</div>
       </section>
       <nav aria-label="Problems" className="mt-6 border-t border-ink/20 pt-4">
         <h2 className="text-xl font-bold">Other interviews</h2>

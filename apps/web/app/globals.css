@@ -3,6 +3,18 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --paper: 247 248 247;
+    --ink: 28 37 48;
+    --smoke: 93 109 126;
+    --ember: 176 58 46;
+  }
+  .dark {
+    --paper: 18 22 29;
+    --ink: 233 236 241;
+    --smoke: 154 164 178;
+    --ember: 224 108 91;
+  }
   body {
     @apply bg-paper text-ink font-sans antialiased;
   }

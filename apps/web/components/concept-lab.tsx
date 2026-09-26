@@ -255,6 +255,10 @@ export function ConceptLab({
         <h2 className="text-xl font-bold">
           <span className="mr-3 font-mono text-sm font-normal text-smoke">04</span>Chaos button
         </h2>
+        <p className="mt-3 max-w-2xl leading-relaxed">
+          Kills a random backend or spikes traffic, so you can watch the survivor cope. Try it right after a clean
+          run: compare the two tables and find what broke first.
+        </p>
         <button type="button" className="mt-3 border border-ink px-3 py-1.5" onClick={injectChaos}>
           Inject random fault
         </button>

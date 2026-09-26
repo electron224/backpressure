@@ -6,10 +6,10 @@ export default {
   theme: {
     extend: {
       colors: {
-        paper: "#F7F8F7",
-        ink: "#1C2530",
-        smoke: "#5D6D7E",
-        ember: "#B03A2E",
+        paper: "rgb(var(--paper) / <alpha-value>)",
+        ink: "rgb(var(--ink) / <alpha-value>)",
+        smoke: "rgb(var(--smoke) / <alpha-value>)",
+        ember: "rgb(var(--ember) / <alpha-value>)",
       },
       fontFamily: {
         sans: ["-apple-system", "BlinkMacSystemFont", "Segoe UI", "Helvetica", "Arial", "sans-serif"],

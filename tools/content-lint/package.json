@@ -1,0 +1,10 @@
+{
+  "name": "@backpressure/content-lint",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@backpressure/coach": "workspace:*",
+    "@backpressure/concept-engine": "workspace:*"
+  }
+}

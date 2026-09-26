@@ -1,8 +1,7 @@
 // packages/coach/src/grade-core.ts
-import { runChecks } from "./checks.js";
+import { evaluateCriterion } from "./checks.js";
 import type { StructuralFinding } from "./checks.js";
-import { runPreset } from "@backpressure/concept-engine";
-import type { LabPreset, Topology } from "@backpressure/concept-engine";
+import type { Topology } from "@backpressure/concept-engine";
 
 export interface GradeCriterion {
   id: string;
@@ -42,29 +41,12 @@ export interface GradeReport {
   llmNote: string;
 }
 
-function asPreset(problemId: string, topology: Topology, sloP99Ms: number): LabPreset {
-  return {
-    id: problemId,
-    topology,
-    controls: [],
-    metrics: ["p99"],
-    challenges: [{ id: "grade.run", text: "Grade the submission", verdict: "slo.p99" }],
-    sloP99Ms,
-  };
-}
-
-function backendIds(topology: Topology): string[] {
-  return topology.nodes.filter((n) => n.kind === "service" || n.kind === "database").map((n) => n.id);
-}
-
 export function gradeWith(
   topology: Topology,
   rubric: { dimensions: GradeDimension[] },
   scenarios: ScenarioDef[],
 ): GradeReport {
-  const baseline = scenarios.find((s) => s.id === "baseline") ?? scenarios[0];
-  if (baseline === undefined) throw new Error("gradeWith needs at least one scenario");
-  const values = { rps: baseline.rps, writePct: baseline.writePct ?? 0 };
+  if (scenarios.length === 0) throw new Error("gradeWith needs at least one scenario");
 
   const criteria: CriterionResult[] = [];
   const structural: StructuralFinding[] = [];
@@ -75,48 +57,19 @@ export function gradeWith(
     for (const criterion of dimension.criteria) {
       possible += criterion.points;
       if (dimension.grader !== "deterministic" || criterion.check === undefined) continue;
-      if (criterion.check === "no_single_point_of_failure" || criterion.check === "cache_between_app_and_db") {
-        const [finding] = runChecks(topology, [criterion.check]);
-        if (finding === undefined) throw new Error(`check produced no finding: ${criterion.check}`);
-        structural.push(finding);
-        const got = finding.passed ? criterion.points : 0;
-        earned += got;
-        criteria.push({ id: criterion.id, points: criterion.points, earned: got, detail: finding.detail });
-      } else if (criterion.check === "slo_p99_under_load") {
-        const result = runPreset(asPreset("grade", topology, baseline.sloP99Ms), values);
-        const got = result.verdict === "PASS" ? criterion.points : 0;
-        earned += got;
-        verdicts.push({ id: "slo.p99:baseline", passed: result.verdict === "PASS", observed: Math.round(result.p99) });
-        criteria.push({
-          id: criterion.id,
-          points: criterion.points,
-          earned: got,
-          detail: `baseline p99 ${Math.round(result.p99)}ms vs SLO ${baseline.sloP99Ms}ms`,
-        });
-      } else if (criterion.check === "survives_each_single_loss") {
-        const loss = scenarios.find((s) => s.eachBackend === true) ?? baseline;
-        const ids = backendIds(topology);
-        let survived = 0;
-        for (const id of ids) {
-          const result = runPreset(
-            asPreset("grade", topology, loss.sloP99Ms),
-            { rps: loss.rps, writePct: loss.writePct ?? 0 },
-            { dropBackend: id },
-          );
-          if (result.verdict === "PASS") survived += 1;
-          verdicts.push({ id: `slo.p99:loss-${id}`, passed: result.verdict === "PASS", observed: Math.round(result.p99) });
-        }
-        const got = ids.length === 0 ? 0 : Math.round((criterion.points * survived) / ids.length);
-        earned += got;
-        criteria.push({
-          id: criterion.id,
-          points: criterion.points,
-          earned: got,
-          detail: `survived ${survived}/${ids.length} single-backend losses`,
-        });
-      } else {
-        throw new Error(`unknown check '${criterion.check}' (register it in packages/coach/src/checks.ts)`);
+      // Every deterministic check resolves through the registry: the same
+      // function the linter enforces, the grader executes.
+      const evaluation = evaluateCriterion(topology, criterion.check, scenarios);
+      const got = Math.round(criterion.points * evaluation.credit);
+      earned += got;
+      if (
+        criterion.check === "no_single_point_of_failure" ||
+        criterion.check === "cache_between_app_and_db"
+      ) {
+        structural.push(evaluation.finding);
       }
+      verdicts.push(...evaluation.verdicts);
+      criteria.push({ id: criterion.id, points: criterion.points, earned: got, detail: evaluation.finding.detail });
     }
     return { id: dimension.id, weight: dimension.weight, earned, possible };
   });
@@ -131,6 +84,6 @@ export function gradeWith(
     verdicts,
     total,
     llmNote:
-      "LLM coach unavailable without ANTHROPIC_API_KEY: subjective dimensions unscored. Deterministic total covers simulator-checkable criteria only.",
+      "LLM coach unavailable without a provider key: subjective dimensions unscored. Deterministic total covers simulator-checkable criteria only.",
   };
 }

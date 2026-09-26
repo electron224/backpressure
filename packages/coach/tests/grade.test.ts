@@ -23,7 +23,7 @@ describe("gradeSubmission", () => {
     for (const criterion of report.criteria) {
       expect(criterion.earned).toBe(criterion.points);
     }
-    expect(report.llmNote).toContain("ANTHROPIC_API_KEY");
+    expect(report.llmNote).toContain("provider key");
   });
 });
 

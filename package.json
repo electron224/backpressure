@@ -6,7 +6,8 @@
   "scripts": {
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "demo": "npx -y tsx demo/run.ts"
+    "demo": "npx -y tsx demo/run.ts",
+    "content:lint": "tsx tools/content-lint/lint.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.2",

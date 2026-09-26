@@ -33,6 +33,10 @@ export default function Home(): JSX.Element {
         <Link href="/problems/design-url-shortener" className="hover:text-ember">
           take the URL shortener interview
         </Link>
+        , repair a{" "}
+        <Link href="/fixits" className="hover:text-ember">
+          broken architecture
+        </Link>
         , or check your <Link href="/progress" className="hover:text-ember">progress</Link>.
       </p>
     </main>

@@ -22,6 +22,7 @@ export default function RootLayout({ children }: { children: ReactNode }): JSX.E
               <Link href="/design">Design canvas</Link>
               <Link href="/problems/design-url-shortener">Interview: URL shortener</Link>
               <Link href="/coach">Coach</Link>
+              <Link href="/fixits">Fix it</Link>
             </nav>
             <span className="ml-auto">
               <ThemeToggle />

@@ -3,6 +3,7 @@ import type { ReactElement } from "react";
 import { compileMDX } from "next-mdx-remote/rsc";
 import { getProblem } from "../../../lib/problems";
 import { InterviewFlow } from "../../../components/interview-flow";
+import { ReadinessBanner } from "../../../components/readiness-banner";
 
 const SIBLINGS: { slug: string; title: string }[] = [
   { slug: "design-url-shortener", title: "Design a URL Shortener" },
@@ -25,6 +26,7 @@ export default async function ProblemPage({ params }: { params: { slug: string }
     <main>
       <p className="mt-8 font-mono text-sm text-smoke">01 Brief</p>
       <h1 className="mt-2 text-3xl font-bold tracking-tight">{problem.meta.title}</h1>
+      <ReadinessBanner required={problem.meta.concepts_required} />
       <section aria-label="Brief">
         <div className="prose mt-4 max-w-2xl leading-relaxed">{content}</div>
       </section>

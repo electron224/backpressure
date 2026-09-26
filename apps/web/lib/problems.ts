@@ -22,7 +22,7 @@ function readJson(slug: string, file: string): unknown {
 }
 
 export interface ProblemContent {
-  meta: { id: string; title: string };
+  meta: { id: string; title: string; concepts_required: string[] };
   briefMdx: string;
   clarifications: { q: string; a: string }[];
   scale: Record<string, number | string>;

@@ -12,7 +12,4 @@ export const labPreset = {
   },
   controls: [{ id: "rps", label: "Producer (RPS)", kind: "slider", min: 20, max: 300, def: 150 }],
   metrics: ["p99", "throughput", "queueDepth"],
-  challenges: [
-    { id: "bp.1", text: "Flood at 150: depth explodes while poison lands in DLQ", verdict: "slo.p99", apply: { set: { rps: 150 } } },
-  ],
 };

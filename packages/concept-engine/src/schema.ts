@@ -83,13 +83,22 @@ export const PresetVariantSchema = z.object({
 
 export type PresetVariant = z.infer<typeof PresetVariantSchema>;
 
+export const PresetAddonSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+  topology: TopologySchema,
+});
+
+export type PresetAddon = z.infer<typeof PresetAddonSchema>;
+
 export const LabPresetSchema = z.object({
   id: z.string().min(1),
   topology: TopologySchema,
   controls: z.array(LabControlSchema),
   metrics: z.array(z.string()),
-  challenges: ChallengesSchema,
+  challenges: ChallengesSchema.optional(),
   variants: z.array(PresetVariantSchema).optional(),
+  addons: z.array(PresetAddonSchema).optional(),
   sloP99Ms: z.number().positive().optional(),
 });
 

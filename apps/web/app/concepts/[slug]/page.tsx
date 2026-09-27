@@ -24,7 +24,7 @@ export default async function ConceptPage({ params }: { params: { slug: string }
       </section>
       <PublishContext context={{ kind: "concept", slug: params.slug, title: concept.meta.title, summary: `Four-stage lab: learn, play, predict, chaos, stress, recall.` }} />
       <ConceptNav slug={params.slug} prerequisites={concept.meta.prerequisites} next={next} />
-      <ConceptLab slug={concept.meta.id} preset={getPreset(concept.meta.id)} challenges={concept.challenges} recall={concept.recall} />
+      <ConceptLab slug={concept.meta.id} preset={getPreset(concept.meta.id)} recall={concept.recall} />
     </main>
   );
 }

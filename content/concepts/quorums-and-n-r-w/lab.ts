@@ -21,8 +21,4 @@ export const labPreset = {
     { id: "skewPct", label: "Skew (alpha ×100)", kind: "slider", min: 0, max: 150, def: 120 },
   ],
   metrics: ["p99", "throughput", "queueDepth"],
-  challenges: [
-    { id: "q.1", text: "Sync writes: latency follows the quorum tier", verdict: "slo.p99", apply: { set: { rps: 80, writePct: 20, mode: "sync" } } },
-    { id: "q.2", text: "Async reads spread over replicas go stale on slow ones", verdict: "slo.p99", apply: { set: { rps: 80, writePct: 20, mode: "async" } } },
-  ],
 };

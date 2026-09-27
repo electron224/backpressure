@@ -22,8 +22,4 @@ export const labPreset = {
     { id: "rps", label: "Traffic (RPS)", kind: "slider", min: 20, max: 300, def: 80 },
   ],
   metrics: ["p99", "throughput", "queueDepth"],
-  challenges: [
-    { id: "le.1", text: "Sticky pins the leader while the follower idles by design", verdict: "slo.p99", apply: { set: { rps: 80 } } },
-    { id: "le.2", text: "Kill the leader: the pin re-seats with zero config change", verdict: "slo.p99", apply: { set: { rps: 80 } } },
-  ],
 };

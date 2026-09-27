@@ -11,7 +11,7 @@ import {
   predictionError,
   runPreset,
 } from "@backpressure/concept-engine";
-import type { Challenge, LabPreset, PresetValues, RecallItem, StorageLike, Topology } from "@backpressure/concept-engine";
+import type { LabPreset, PresetValues, RecallItem, StorageLike, Topology } from "@backpressure/concept-engine";
 import { MetricTable } from "./metric-table";
 import type { LabRow } from "./metric-table";
 import { MetricChart } from "./metric-chart";
@@ -39,19 +39,13 @@ function browserStore(): StorageLike {
   };
 }
 
-function formatRow(label: string, p99: number, verdict: "PASS" | "FAIL"): string {
-  return `${label} p99 ${Math.round(p99)}ms ${verdict}`;
-}
-
 export function ConceptLab({
   slug,
   preset,
-  challenges,
   recall,
 }: {
   slug: string;
   preset: LabPreset;
-  challenges: Challenge[];
   recall: RecallItem[];
 }): JSX.Element {
   const progress = useMemo(() => createProgress(browserStore()), []);
@@ -69,6 +63,34 @@ export function ConceptLab({
   const [chaosRps, setChaosRps] = useState<number | undefined>(undefined);
   const [chaosCount, setChaosCount] = useState<number>(0);
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
+  const [addons, setAddons] = useState<string[]>([]);
+
+  function withAddons(base: Topology): Topology {
+    const active = (preset.addons ?? []).filter((addon) => addons.includes(addon.id));
+    if (active.length === 0) return base;
+    // Idempotent merge: nodes or edges already present are skipped so an
+    // add-on applied on top of a variant carrying the same ids stays valid.
+    const haveNodes = new Set(base.nodes.map((node) => node.id));
+    const haveEdges = new Set(base.edges.map((edge) => `${edge.from}->${edge.to}`));
+    const nodes = [...base.nodes];
+    const edges = [...base.edges];
+    for (const addon of active) {
+      for (const node of addon.topology.nodes) {
+        if (!haveNodes.has(node.id)) {
+          haveNodes.add(node.id);
+          nodes.push(node);
+        }
+      }
+      for (const edge of addon.topology.edges) {
+        const key = `${edge.from}->${edge.to}`;
+        if (!haveEdges.has(key)) {
+          haveEdges.add(key);
+          edges.push(edge);
+        }
+      }
+    }
+    return { nodes, edges };
+  }
 
   // The first select control fans out into comparison rows; each row overrides
   // that control's id with its option. Presets without a select get one row
@@ -91,7 +113,7 @@ export function ConceptLab({
       if (topo.label !== "base") parts.push(topo.label);
       if (strat !== undefined) parts.push(strat);
       const label = parts.join(" ") || "base";
-      const topology = topo.topology ?? preset.topology;
+      const topology = withAddons(topo.topology ?? preset.topology);
       const rowValues: PresetValues = { ...values };
       if (selectControl !== undefined && strat !== undefined) {
         rowValues[selectControl.id] = strat;
@@ -127,11 +149,12 @@ export function ConceptLab({
   }
 
   function injectChaos(): void {
-    // Deterministic counter seed — never Date.now() (determinism discipline).
-    // Backends are the union of service ids across the base topology and all
-    // variant topologies, so variant-specific backends are killable too.
-    // Unknown drop ids stay a no-op inside runPreset.
-    const topologies = [preset.topology, ...(preset.variants ?? []).flatMap((v) => (v.topology ? [v.topology] : []))];
+    // Backends across base, variant, and added topologies, so every
+    // killable node stays killable. Unknown drop ids stay a no-op inside runPreset.
+    const topologies = [
+      withAddons(preset.topology),
+      ...(preset.variants ?? []).flatMap((v) => (v.topology ? [withAddons(v.topology)] : [])),
+    ];
     const backends = [
       ...new Set(
         topologies.flatMap((topology) => topology.nodes.filter((node) => node.kind === "service" || node.kind === "rate-limiter" || node.kind === "shard-router" || node.kind === "dedup" || node.kind === "pipe" || node.kind === "queue" || node.kind === "fan-out").map((node) => node.id)),
@@ -154,25 +177,6 @@ export function ConceptLab({
       setChaosNote(`Chaos: traffic spike to ${fault.rps ?? 160} RPS for this run.`);
     }
     progress.completeStage(slug, "play");
-  }
-
-  function attemptChallenge(id: string): void {
-    setDropped(undefined);
-    setChaosRps(undefined);
-    setChaosNote("No fault injected yet.");
-    const challenge = challenges.find((c) => c.id === id);
-    const patch = challenge?.apply?.set;
-    if (patch !== undefined) {
-      setValues((prev) => ({ ...prev, ...patch }));
-    }
-    progress.completeStage(slug, "stress");
-  }
-
-  function liveResult(id: string): string {
-    const challenge = challenges.find((c) => c.id === id);
-    const shown = challenge?.show === undefined ? rows : rows.filter((row) => row.strategy === challenge.show);
-    if (shown.length === 0) return "no result yet";
-    return shown.map((row) => formatRow(row.strategy, row.p99, row.verdict)).join(" vs ");
   }
 
   return (
@@ -217,6 +221,29 @@ export function ConceptLab({
               />
             </label>
           ),
+        )}
+        {(preset.addons ?? []).length > 0 && (
+          <div className="mt-3">
+            <p className="font-mono text-sm text-smoke">Add components to the running system:</p>
+            <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="Add components">
+              {(preset.addons ?? []).map((addon) => {
+                const active = addons.includes(addon.id);
+                return (
+                  <button
+                    key={addon.id}
+                    type="button"
+                    aria-pressed={active}
+                    className={`border px-3 py-1.5 min-h-[44px] font-mono text-sm ${active ? "border-ember bg-ember text-paper" : "border-ink"}`}
+                    onClick={() =>
+                      setAddons((prev) => (active ? prev.filter((id) => id !== addon.id) : [...prev, addon.id]))
+                    }
+                  >
+                    {active ? "Remove " : "Add "}{addon.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         )}
         <TopologyDiagram topology={actualRow.topology} />
         <MetricTable rows={rows} />
@@ -278,25 +305,9 @@ export function ConceptLab({
         <p className="mt-2">{chaosNote}</p>
       </section>
 
-      <section aria-label="Stress" className="mt-10 border-t border-ink/20 pt-4">
-        <h2 className="text-xl font-bold">
-          <span className="mr-3 font-mono text-sm font-normal text-smoke">05</span>Stress
-        </h2>
-        <ul>
-          {challenges.map((c) => (
-            <li key={c.id} className="border-b border-ink/10 py-2">
-              {c.text} — verdict: {c.verdict} — live: {liveResult(c.id)}{" "}
-              <button type="button" className="ml-2 border border-ink px-3 py-1.5 min-h-[44px]" onClick={() => attemptChallenge(c.id)}>
-                Attempt {c.id}
-              </button>
-            </li>
-          ))}
-        </ul>
-      </section>
-
       <section aria-label="Recall" className="mt-10 border-t border-ink/20 pt-4">
         <h2 className="text-xl font-bold">
-          <span className="mr-3 font-mono text-sm font-normal text-smoke">06</span>Recall
+          <span className="mr-3 font-mono text-sm font-normal text-smoke">05</span>Recall
         </h2>
         <ul>
           {recall.map((item) => (

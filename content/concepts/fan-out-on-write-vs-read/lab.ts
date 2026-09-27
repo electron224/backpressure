@@ -29,7 +29,4 @@ export const labPreset = {
     { id: "writePct", label: "Writes (%)", kind: "slider", min: 0, max: 100, def: 50 },
   ],
   metrics: ["p99", "throughput", "queueDepth"],
-  challenges: [
-    { id: "fw.1", text: "At 50% writes, origin load runs 4× the read path", verdict: "slo.p99", apply: { set: { rps: 80, writePct: 50 } } },
-  ],
 };

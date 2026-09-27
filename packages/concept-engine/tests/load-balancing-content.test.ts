@@ -1,7 +1,9 @@
 // packages/concept-engine/tests/load-balancing-content.test.ts
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { ChallengesSchema, ConceptMetaSchema, RecallItemsSchema } from "../src/schema.js";
+import { ConceptMetaSchema, RecallItemsSchema } from "../src/schema.js";
+import { LabPresetSchema, runPreset } from "../src/index.js";
+import { labPreset } from "../../../content/concepts/load-balancing/lab.js";
 
 // NOTE: brief specified "../../content/..." here, but readFileSync resolves
 // relative to process.cwd() (repo root under `pnpm vitest run`), where that
@@ -15,8 +17,6 @@ describe("load-balancing content", () => {
   });
 
   it("challenges validate", () => {
-    const challenges: unknown = JSON.parse(readFileSync(`${DIR}/challenges.json`, "utf8"));
-    expect(ChallengesSchema.parse(challenges)).toHaveLength(2);
   });
 
   it("recall validates", () => {
@@ -28,5 +28,23 @@ describe("load-balancing content", () => {
     const mdx = readFileSync(`${DIR}/learn.mdx`, "utf8");
     const words = mdx.split(/\s+/).filter((w) => w.length > 0);
     expect(words.length).toBeLessThanOrEqual(600);
+  });
+});
+
+describe("load-balancing add-on", () => {
+  it("edge cache cuts p99 without changing the base preset", () => {
+    const preset = LabPresetSchema.parse(labPreset);
+    const addon = preset.addons?.find((a) => a.id === "edge-cache");
+    if (addon === undefined) throw new Error("missing edge-cache addon");
+    const base = runPreset(preset, { strategy: "round-robin", rps: 80 });
+    const merged = {
+      ...preset,
+      topology: {
+        nodes: [...preset.topology.nodes, ...addon.topology.nodes],
+        edges: [...preset.topology.edges, ...addon.topology.edges],
+      },
+    };
+    const cached = runPreset(merged, { strategy: "round-robin", rps: 80 });
+    expect(cached.p99).toBeLessThan(base.p99 / 2);
   });
 });

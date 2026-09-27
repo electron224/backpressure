@@ -25,7 +25,4 @@ export const labPreset = {
     },
     { label: "queued" },
   ],
-  challenges: [
-    { id: "mq.1", text: "Burst 250: direct sheds, queue holds and drains late", verdict: "slo.p99", apply: { set: { rps: 250 } } },
-  ],
 };

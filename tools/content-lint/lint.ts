@@ -1,7 +1,7 @@
 // tools/content-lint/lint.ts — validates content/ against Zod schemas + cross-file rules.
 import { readdirSync, readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import { ConceptMetaSchema, ChallengesSchema, RecallItemsSchema, LabPresetSchema } from "@backpressure/concept-engine";
+import { ConceptMetaSchema, RecallItemsSchema, LabPresetSchema } from "@backpressure/concept-engine";
 import { CHECKS } from "@backpressure/coach";
 
 const ROOT = join(process.cwd(), "content", "concepts");
@@ -25,7 +25,7 @@ function readJson(path: string): unknown {
 
 function checkConcept(slug: string): void {
   const dir = join(ROOT, slug);
-  for (const file of ["meta.json", "learn.mdx", "lab.ts", "challenges.json", "recall.json"]) {
+  for (const file of ["meta.json", "learn.mdx", "lab.ts", "recall.json"]) {
     if (!existsSync(join(dir, file))) fail(`${slug}: missing ${file}`);
   }
   const meta = readJson(join(dir, "meta.json"));
@@ -33,10 +33,6 @@ function checkConcept(slug: string): void {
     const parsed = ConceptMetaSchema.safeParse(meta);
     if (!parsed.success) fail(`${slug}/meta.json: ${parsed.error.message}`);
     else if (parsed.data.id !== slug) fail(`${slug}/meta.json id mismatch`);
-  }
-  const challenges = readJson(join(dir, "challenges.json"));
-  if (challenges !== undefined && !ChallengesSchema.safeParse(challenges).success) {
-    fail(`${slug}/challenges.json: schema violation`);
   }
   const recall = readJson(join(dir, "recall.json"));
   if (recall !== undefined && !RecallItemsSchema.safeParse(recall).success) {
@@ -71,20 +67,14 @@ function checkProblem(slug: string): void {
 for (const slug of readdirSync(ROOT)) checkConcept(slug);
 for (const slug of readdirSync(PROBLEMS)) checkProblem(slug);
 
-// Lab presets are TS modules: import, validate, and check the embedded
-// challenges mirror challenges.json (single source would be better;
-// the mirror is pinned here until content:lint owns it).
+// Lab presets are TS modules: import and validate against the schema,
+// including any component add-ons.
 for (const slug of readdirSync(ROOT)) {
   try {
     const mod = (await import(join(ROOT, slug, "lab.ts"))) as { labPreset?: unknown };
     const parsed = LabPresetSchema.safeParse(mod.labPreset);
     if (!parsed.success) {
       fail(`${slug}/lab.ts: ${parsed.error.message}`);
-      continue;
-    }
-    const fileChallenges: unknown = JSON.parse(readFileSync(join(ROOT, slug, "challenges.json"), "utf8"));
-    if (JSON.stringify(fileChallenges) !== JSON.stringify(parsed.data.challenges)) {
-      fail(`${slug}: lab.ts challenges diverge from challenges.json`);
     }
   } catch (error) {
     fail(`${slug}/lab.ts: ${String(error)}`);

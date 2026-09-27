@@ -20,8 +20,4 @@ export const labPreset = {
     { id: "skewPct", label: "Skew (alpha ×100)", kind: "slider", min: 0, max: 150, def: 120 },
   ],
   metrics: ["p99", "throughput", "queueDepth"],
-  challenges: [
-    { id: "cap.1", text: "Partition with AP: reads keep flowing, staleness climbs, then heals", verdict: "slo.p99", apply: { set: { rps: 80, writePct: 20, mode: "async" } }, show: "async" },
-    { id: "cap.2", text: "Partition with CP: zero stale, fast errors instead", verdict: "slo.p99", apply: { set: { rps: 80, writePct: 20, mode: "sync" } }, show: "sync" },
-  ],
 };

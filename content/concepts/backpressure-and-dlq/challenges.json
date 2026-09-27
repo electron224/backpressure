@@ -1,3 +1,0 @@
-[
-  { "id": "bp.1", "text": "Flood at 150: depth explodes while poison lands in DLQ", "verdict": "slo.p99", "apply": { "set": { "rps": 150 } } }
-]

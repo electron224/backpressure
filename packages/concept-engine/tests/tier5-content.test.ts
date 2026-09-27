@@ -1,7 +1,7 @@
 // packages/concept-engine/tests/tier5-content.test.ts
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { LabPresetSchema, ChallengesSchema, ConceptMetaSchema, RecallItemsSchema } from "../src/schema.js";
+import { LabPresetSchema, ConceptMetaSchema, RecallItemsSchema } from "../src/schema.js";
 import { runPreset } from "../src/preset-run.js";
 import { labPreset as mq } from "../../../content/concepts/message-queues-vs-streams/lab.js";
 import { labPreset as pubsub } from "../../../content/concepts/pub-sub/lab.js";
@@ -24,8 +24,6 @@ describe("tier-5 content files", () => {
       const dir = `content/concepts/${c.slug}`;
       const meta: unknown = JSON.parse(readFileSync(`${dir}/meta.json`, "utf8"));
       expect(ConceptMetaSchema.parse(meta).id).toBe(c.slug);
-      const challenges: unknown = JSON.parse(readFileSync(`${dir}/challenges.json`, "utf8"));
-      expect(ChallengesSchema.parse(challenges)).toHaveLength(c.challenges);
       const recall: unknown = JSON.parse(readFileSync(`${dir}/recall.json`, "utf8"));
       expect(RecallItemsSchema.parse(recall).length).toBeGreaterThanOrEqual(c.recallMin);
       const words = readFileSync(`${dir}/learn.mdx`, "utf8").split(/\s+/).filter((w: string) => w.length > 0);

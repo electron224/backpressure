@@ -1,7 +1,7 @@
 // packages/concept-engine/tests/replication-content.test.ts
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { LabPresetSchema, ChallengesSchema, ConceptMetaSchema, RecallItemsSchema } from "../src/schema.js";
+import { LabPresetSchema, ConceptMetaSchema, RecallItemsSchema } from "../src/schema.js";
 import { runPreset } from "../src/preset-run.js";
 import { labPreset } from "../../../content/concepts/replication/lab.js";
 
@@ -20,8 +20,6 @@ describe("replication content", () => {
     expect(preset.id).toBe("replication");
     const meta: unknown = JSON.parse(readFileSync(`${DIR}/meta.json`, "utf8"));
     expect(ConceptMetaSchema.parse(meta).id).toBe("replication");
-    const challenges: unknown = JSON.parse(readFileSync(`${DIR}/challenges.json`, "utf8"));
-    expect(ChallengesSchema.parse(challenges)).toHaveLength(2);
     const recall: unknown = JSON.parse(readFileSync(`${DIR}/recall.json`, "utf8"));
     expect(RecallItemsSchema.parse(recall).length).toBeGreaterThanOrEqual(3);
     const words = readFileSync(`${DIR}/learn.mdx`, "utf8").split(/\s+/).filter((w: string) => w.length > 0);

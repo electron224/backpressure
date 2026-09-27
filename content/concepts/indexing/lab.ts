@@ -28,8 +28,4 @@ export const labPreset = {
       topology: { nodes: [{ id: "heap", kind: "service", config: { serviceMs: 20, concurrency: 8, queueLimit: 200, readMs: 150, writeMs: 10 } }], edges: [] },
     },
   ],
-  challenges: [
-    { id: "ix.1", text: "Read-heavy at 5% writes: indexed answers in single digits", verdict: "slo.p99", apply: { set: { rps: 80, writePct: 5 } } },
-    { id: "ix.2", text: "Push 150 RPS read-heavy: heap saturates past capacity, indexed holds", verdict: "slo.p99", apply: { set: { rps: 150, writePct: 5 } } },
-  ],
 };

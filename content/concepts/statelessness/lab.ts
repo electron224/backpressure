@@ -19,13 +19,4 @@ export const labPreset = {
     { id: "rps", label: "Traffic (RPS)", kind: "slider", min: 10, max: 200, def: 80 },
   ],
   metrics: ["p99", "throughput", "queueDepth"],
-  challenges: [
-    {
-      id: "sls.1",
-      text: "Push to 120 RPS: sticky saturates one backend while least-connections holds",
-      verdict: "slo.p99",
-      apply: { set: { rps: 120 } },
-      show: "least-connections",
-    },
-  ],
 };

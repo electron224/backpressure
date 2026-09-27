@@ -1,7 +1,7 @@
 // packages/concept-engine/tests/theory-content.test.ts
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { LabPresetSchema, ChallengesSchema, ConceptMetaSchema, RecallItemsSchema } from "../src/schema.js";
+import { LabPresetSchema, ConceptMetaSchema, RecallItemsSchema } from "../src/schema.js";
 import { runPreset } from "../src/preset-run.js";
 import { labPreset as pacelc } from "../../../content/concepts/pacelc/lab.js";
 import { labPreset as consistencyModels } from "../../../content/concepts/consistency-models/lab.js";
@@ -9,8 +9,6 @@ import { labPreset as consistencyModels } from "../../../content/concepts/consis
 function checkFiles(dir: string, id: string, challengeCount: number, recallMin: number): void {
   const meta: unknown = JSON.parse(readFileSync(`${dir}/meta.json`, "utf8"));
   expect(ConceptMetaSchema.parse(meta).id).toBe(id);
-  const challenges: unknown = JSON.parse(readFileSync(`${dir}/challenges.json`, "utf8"));
-  expect(ChallengesSchema.parse(challenges)).toHaveLength(challengeCount);
   const recall: unknown = JSON.parse(readFileSync(`${dir}/recall.json`, "utf8"));
   expect(RecallItemsSchema.parse(recall).length).toBeGreaterThanOrEqual(recallMin);
   const words = readFileSync(`${dir}/learn.mdx`, "utf8").split(/\s+/).filter((w: string) => w.length > 0);

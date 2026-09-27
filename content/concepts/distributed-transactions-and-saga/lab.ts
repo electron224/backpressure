@@ -16,8 +16,4 @@ export const labPreset = {
   },
   controls: [{ id: "rps", label: "Traffic (RPS)", kind: "slider", min: 20, max: 300, def: 80 }],
   metrics: ["p99", "throughput", "queueDepth"],
-  challenges: [
-    { id: "sg.1", text: "Kill the pay step: order completes, nothing ships", verdict: "slo.p99", apply: { set: { rps: 80 } } },
-    { id: "sg.2", text: "Full chain at 80: every order ships clean", verdict: "slo.p99", apply: { set: { rps: 80 } } },
-  ],
 };

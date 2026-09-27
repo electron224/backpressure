@@ -23,8 +23,20 @@ export const labPreset = {
     { id: "skewPct", label: "Skew (alpha ×100)", kind: "slider", min: 0, max: 200, def: 150 },
   ],
   metrics: ["p99", "throughput", "queueDepth"],
-  challenges: [
-    { id: "sh.1", text: "Skew 150 at 200 RPS: shard 0 saturates while siblings idle", verdict: "slo.p99", apply: { set: { rps: 200, skewPct: 150 } } },
-    { id: "sh.2", text: "Drop skew to 0 and watch the shards balance", verdict: "slo.p99", apply: { set: { rps: 200, skewPct: 0 } } },
+  addons: [
+    {
+      id: "two-more-shards",
+      label: "2 more shards",
+      topology: {
+        nodes: [
+          { id: "s4", kind: "service", config: { serviceMs: 20, concurrency: 2, queueLimit: 50 } },
+          { id: "s5", kind: "service", config: { serviceMs: 20, concurrency: 2, queueLimit: 50 } },
+        ],
+        edges: [
+          { from: "router", to: "s4" },
+          { from: "router", to: "s5" },
+        ],
+      },
+    },
   ],
 };

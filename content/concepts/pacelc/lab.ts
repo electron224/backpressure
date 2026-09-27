@@ -17,8 +17,4 @@ export const labPreset = {
     { id: "db.lagMs", label: "Replica lag (ms)", kind: "slider", min: 0, max: 2000, def: 500 },
   ],
   metrics: ["p99", "throughput", "queueDepth"],
-  challenges: [
-    { id: "pace.1", text: "No partition, lag 2000: sync pays it on every write", verdict: "slo.p99", apply: { set: { rps: 80, writePct: 20, mode: "sync", "db.lagMs": 2000 } }, show: "sync" },
-    { id: "pace.2", text: "Same setup async: fast writes, staleness climbs with lag", verdict: "slo.p99", apply: { set: { rps: 80, writePct: 20, mode: "async", "db.lagMs": 2000 } }, show: "async" },
-  ],
 };

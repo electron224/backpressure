@@ -19,8 +19,4 @@ export const labPreset = {
     { id: "rps", label: "Traffic (RPS)", kind: "slider", min: 20, max: 300, def: 150 },
   ],
   metrics: ["p99", "throughput", "queueDepth"],
-  challenges: [
-    { id: "hb.1", text: "Hold 150 RPS with errors collapsed and p99 held", verdict: "slo.p99", apply: { set: { rps: 150, breaker: "on" } }, show: "on" },
-    { id: "hb.2", text: "Flip the breaker off at 150 RPS and compare rejected totals", verdict: "slo.p99", apply: { set: { rps: 150 } } },
-  ],
 };

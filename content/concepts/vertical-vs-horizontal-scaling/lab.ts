@@ -31,12 +31,4 @@ export const labPreset = {
     { label: "fat", topology: fatTopology },
     { label: "wide", topology: wideTopology },
   ],
-  challenges: [
-    {
-      id: "scale.1",
-      text: "Both pass at 200 RPS — push to 300 and compare degradation",
-      verdict: "slo.p99",
-      apply: { set: { rps: 300 } },
-    },
-  ],
 };

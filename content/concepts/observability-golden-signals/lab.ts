@@ -21,8 +21,4 @@ export const labPreset = {
     { id: "rps", label: "Traffic (RPS)", kind: "slider", min: 20, max: 300, def: 60 },
   ],
   metrics: ["p99", "throughput", "queueDepth"],
-  challenges: [
-    { id: "ob.1", text: "Run clean at 60: all four signals green", verdict: "slo.p99", apply: { set: { rps: 60 } } },
-    { id: "ob.2", text: "Inject chaos and read the four-signal story", verdict: "slo.p99", apply: { set: { rps: 60 } } },
-  ],
 };

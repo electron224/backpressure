@@ -1,6 +1,6 @@
 // packages/concept-engine/tests/schema.test.ts
 import { describe, expect, it } from "vitest";
-import { ChallengesSchema, ConceptMetaSchema, RecallItemsSchema } from "../src/schema.js";
+import { ConceptMetaSchema, ChallengesSchema, RecallItemsSchema } from "../src/schema.js";
 
 describe("ConceptMetaSchema", () => {
   it("accepts a valid meta", () => {

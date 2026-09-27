@@ -21,7 +21,4 @@ export const labPreset = {
     { id: "writePct", label: "Writes (%)", kind: "slider", min: 0, max: 100, def: 100 },
   ],
   metrics: ["p99", "throughput", "queueDepth"],
-  challenges: [
-    { id: "cdc.1", text: "Kill the relay leg: ledger holds what the sink never sees", verdict: "slo.p99", apply: { set: { rps: 80, writePct: 100 } } },
-  ],
 };

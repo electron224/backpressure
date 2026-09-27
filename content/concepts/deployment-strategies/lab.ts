@@ -45,8 +45,4 @@ export const labPreset = {
       },
     },
   ],
-  challenges: [
-    { id: "dp.1", text: "Canary at 100: errors hold near a tenth", verdict: "slo.p99", apply: { set: { rps: 100 } } },
-    { id: "dp.2", text: "Full cutover to faulty v2: everything fails", verdict: "slo.p99", apply: { set: { rps: 100 } } },
-  ],
 };

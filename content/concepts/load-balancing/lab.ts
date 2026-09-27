@@ -35,8 +35,14 @@ export const labPreset = {
   },
   controls,
   metrics: ["p99", "throughput", "queueDepth"],
-  challenges: [
-    { id: "lb.1", text: "Keep p99 under 150ms at 80 RPS by switching strategy", verdict: "slo.p99", apply: { set: { strategy: "least-connections", rps: 80 } }, show: "least-connections" },
-    { id: "lb.2", text: "Push to 120 RPS and report RR vs LC p99 divergence", verdict: "slo.p99", apply: { set: { rps: 120 } } },
+  addons: [
+    {
+      id: "edge-cache",
+      label: "edge cache",
+      topology: {
+        nodes: [{ id: "edge", kind: "cache", config: { ttlMs: 60_000, capacity: 1000, keySpace: 100, hitMs: 2 } }],
+        edges: [{ from: "edge", to: "lb" }],
+      },
+    },
   ],
 };

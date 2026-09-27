@@ -53,7 +53,4 @@ export const labPreset = {
       },
     },
   ],
-  challenges: [
-    { id: "cc.1", text: "At 200 RPS both pass: read the cost lines and pick cheaper", verdict: "slo.p99", apply: { set: { rps: 200 } } },
-  ],
 };

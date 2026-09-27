@@ -16,8 +16,4 @@ export const labPreset = {
     { id: "skewPct", label: "Skew (alpha ×100)", kind: "slider", min: 0, max: 150, def: 120 },
   ],
   metrics: ["p99", "throughput", "queueDepth"],
-  challenges: [
-    { id: "ev.1", text: "At skew 120, compare hits: lru and lfu beat fifo", verdict: "slo.p99", apply: { set: { rps: 80, skewPct: 120 } } },
-    { id: "ev.2", text: "Drop skew to 0 and watch the policies converge", verdict: "slo.p99", apply: { set: { rps: 80, skewPct: 0 } } },
-  ],
 };

@@ -6,13 +6,14 @@ export {
   ConceptMetaSchema,
   LabControlSchema,
   LabPresetSchema,
+  PresetAddonSchema,
   PresetVariantSchema,
   RecallItemSchema,
   RecallItemsSchema,
   TopologyNodeSchema,
   TopologySchema,
 } from "./schema.js";
-export type { Challenge, ChallengeApply, ConceptMeta, LabControl, LabPreset, PresetVariant, PresetValues, RecallItem, Topology, TopologyNode } from "./schema.js";
+export type { Challenge, ChallengeApply, ConceptMeta, LabControl, LabPreset, PresetAddon, PresetVariant, PresetValues, RecallItem, Topology, TopologyNode } from "./schema.js";
 export { DEFAULT_PREDICTION_TOLERANCE_MS, gradePrediction, predictionError } from "./predict.js";
 export { CHAOS_FAULT_AT_MS, CHAOS_KILL_PROBABILITY, CHAOS_SPIKE_RPS, pickRandomFault } from "./chaos.js";
 export { createProgress } from "./progress.js";

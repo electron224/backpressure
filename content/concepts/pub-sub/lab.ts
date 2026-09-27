@@ -37,7 +37,4 @@ export const labPreset = {
   },
   controls: [{ id: "rps", label: "Publish rate (RPS)", kind: "slider", min: 20, max: 300, def: 100 }],
   metrics: ["p99", "throughput", "queueDepth"],
-  challenges: [
-    { id: "ps.1", text: "Publish 100: fast and medium clean, slow leg sheds alone", verdict: "slo.p99", apply: { set: { rps: 100 } } },
-  ],
 };

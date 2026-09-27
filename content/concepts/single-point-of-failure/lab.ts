@@ -32,7 +32,4 @@ export const labPreset = {
       },
     },
   ],
-  challenges: [
-    { id: "spof.1", text: "Survive a kill-node fault with zero errors", verdict: "slo.p99", apply: { set: { rps: 80 } }, show: "replicated" },
-  ],
 };

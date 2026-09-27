@@ -16,8 +16,4 @@ export const labPreset = {
     { id: "writePct", label: "Writes (%)", kind: "slider", min: 0, max: 100, def: 20 },
   ],
   metrics: ["p99", "throughput", "queueDepth"],
-  challenges: [
-    { id: "cs.1", text: "At 20% writes, compare write latency: behind vs through", verdict: "slo.p99", apply: { set: { rps: 80, writePct: 20 } } },
-    { id: "cs.2", text: "Push writes to 50%: which policies keep p99 under 150ms", verdict: "slo.p99", apply: { set: { rps: 80, writePct: 50 } } },
-  ],
 };

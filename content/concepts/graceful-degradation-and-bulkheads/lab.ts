@@ -21,7 +21,4 @@ export const labPreset = {
     { id: "rps", label: "Traffic (RPS)", kind: "slider", min: 20, max: 300, def: 150 },
   ],
   metrics: ["p99", "throughput", "queueDepth"],
-  challenges: [
-    { id: "gd.1", text: "Kill flaky at 150: degraded serving, survivor clean", verdict: "slo.p99", apply: { set: { rps: 150, breaker: "on" } } },
-  ],
 };

@@ -17,8 +17,4 @@ export const labPreset = {
     { id: "db.lagMs", label: "Replica lag (ms)", kind: "slider", min: 0, max: 2000, def: 500 },
   ],
   metrics: ["p99", "throughput", "queueDepth"],
-  challenges: [
-    { id: "cm.1", text: "Lag 500 async: staleness appears, concentrated on hot keys", verdict: "slo.p99", apply: { set: { rps: 80, writePct: 20, mode: "async" } }, show: "async" },
-    { id: "cm.2", text: "Lag 0: strong consistency, zero stale at no extra cost", verdict: "slo.p99", apply: { set: { rps: 80, writePct: 20, mode: "async", "db.lagMs": 0 } }, show: "async" },
-  ],
 };

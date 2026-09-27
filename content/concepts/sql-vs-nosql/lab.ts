@@ -28,8 +28,4 @@ export const labPreset = {
       topology: { nodes: [{ id: "nosql", kind: "service", config: { serviceMs: 20, concurrency: 8, queueLimit: 200, readMs: 10, writeMs: 10 } }], edges: [] },
     },
   ],
-  challenges: [
-    { id: "sn.1", text: "At 50% writes, compare p99: constraint checks compound", verdict: "slo.p99", apply: { set: { rps: 80, writePct: 50 } } },
-    { id: "sn.2", text: "Drop writes to 0% and watch the gap narrow to reads only", verdict: "slo.p99", apply: { set: { rps: 80, writePct: 0 } } },
-  ],
 };

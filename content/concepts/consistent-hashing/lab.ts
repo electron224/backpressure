@@ -43,8 +43,14 @@ export const labPreset = {
       },
     },
   ],
-  challenges: [
-    { id: "ch.1", text: "Add the 4th node: mod reshuffles most keys, ring keeps ~3/4 stable", verdict: "slo.p99", apply: { set: { rps: 150, skewPct: 120 } } },
-    { id: "ch.2", text: "Compare per-shard spread: mod vs consistent at skew 120", verdict: "slo.p99", apply: { set: { rps: 150, skewPct: 120 } } },
+  addons: [
+    {
+      id: "fourth-node",
+      label: "4th node",
+      topology: {
+        nodes: [{ id: "s3", kind: "service", config: { serviceMs: 20, concurrency: 2, queueLimit: 50 } }],
+        edges: [{ from: "router", to: "s3" }],
+      },
+    },
   ],
 };

@@ -1,7 +1,7 @@
 // packages/concept-engine/tests/tier1-content.test.ts
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { LabPresetSchema, ChallengesSchema, ConceptMetaSchema, RecallItemsSchema } from "../src/schema.js";
+import { LabPresetSchema, ConceptMetaSchema, RecallItemsSchema } from "../src/schema.js";
 import { runPreset } from "../src/preset-run.js";
 import { labPreset as latency } from "../../../content/concepts/latency-and-throughput/lab.js";
 import { labPreset as scaling } from "../../../content/concepts/vertical-vs-horizontal-scaling/lab.js";
@@ -11,8 +11,6 @@ import { labPreset as estimation } from "../../../content/concepts/back-of-envel
 function checkFiles(dir: string, id: string, challengeCount: number): void {
   const meta: unknown = JSON.parse(readFileSync(`${dir}/meta.json`, "utf8"));
   expect(ConceptMetaSchema.parse(meta).id).toBe(id);
-  const challenges: unknown = JSON.parse(readFileSync(`${dir}/challenges.json`, "utf8"));
-  expect(ChallengesSchema.parse(challenges)).toHaveLength(challengeCount);
   const recall: unknown = JSON.parse(readFileSync(`${dir}/recall.json`, "utf8"));
   expect(RecallItemsSchema.parse(recall).length).toBeGreaterThanOrEqual(3);
   const words = readFileSync(`${dir}/learn.mdx`, "utf8").split(/\s+/).filter((w: string) => w.length > 0);

@@ -1,0 +1,6 @@
+{
+  "dau": 50000000,
+  "messages_per_day": 10000000000,
+  "read_write_ratio": "1:1",
+  "median_message_bytes": 200
+}

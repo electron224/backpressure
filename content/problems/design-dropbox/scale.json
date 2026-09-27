@@ -1,0 +1,6 @@
+{
+  "dau": 20000000,
+  "chunk_uploads_per_day": 500000000,
+  "avg_chunk_kb": 4096,
+  "read_write_ratio": "1:4"
+}

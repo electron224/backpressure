@@ -5,7 +5,7 @@ import { getConcept } from "../../lib/content";
 import { TRACKS } from "../../lib/tracks";
 import { ProgressView } from "../../components/progress-view";
 
-const PROBLEM_SLUGS = ["design-url-shortener", "design-twitter", "design-video"];
+const PROBLEM_SLUGS = ["design-url-shortener", "design-twitter", "design-video", "design-chat", "design-dropbox"];
 
 function problemMeta(slug: string): { title: string; required: string[] } {
   const meta: unknown = JSON.parse(

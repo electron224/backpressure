@@ -1,0 +1,6 @@
+[
+  { "q": "Realtime or polling?", "a": "Near-realtime delivery; polling every few seconds is acceptable for v1, WebSockets are the follow-up." },
+  { "q": "At most once or at least once?", "a": "At-least-once with idempotent receivers: duplicates are cheaper than losses." },
+  { "q": "Group chats?", "a": "Out of scope for this round; one-to-one only, groups are the deep dive." },
+  { "q": "What scale?", "a": "See scale.json — and say what breaks first at 10x." }
+]

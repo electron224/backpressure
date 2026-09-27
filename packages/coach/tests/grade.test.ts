@@ -55,3 +55,33 @@ describe("design-video references", () => {
     }
   });
 });
+
+describe("design-chat references", () => {
+  it("v1 fails availability, v2 passes deterministic", async () => {
+    const { v1Single } = await import("../../../content/problems/design-chat/reference/v1-single.js");
+    const { v2Queued } = await import("../../../content/problems/design-chat/reference/v2-queued.js");
+    const { LabPresetSchema } = await import("@backpressure/concept-engine");
+    const v1 = gradeSubmission(LabPresetSchema.parse(v1Single).topology, "content/problems/design-chat");
+    expect(v1.criteria.find((c) => c.id === "avail.no-spof")?.earned).toBe(0);
+    expect(v1.criteria.find((c) => c.id === "avail.single-loss")?.earned).toBe(0);
+    const v2 = gradeSubmission(LabPresetSchema.parse(v2Queued).topology, "content/problems/design-chat");
+    for (const criterion of v2.criteria) {
+      expect(criterion.earned).toBe(criterion.points);
+    }
+  });
+});
+
+describe("design-dropbox references", () => {
+  it("v1 fails availability and cache, v2 passes deterministic", async () => {
+    const { v1Single } = await import("../../../content/problems/design-dropbox/reference/v1-single.js");
+    const { v2Replicated } = await import("../../../content/problems/design-dropbox/reference/v2-replicated.js");
+    const { LabPresetSchema } = await import("@backpressure/concept-engine");
+    const v1 = gradeSubmission(LabPresetSchema.parse(v1Single).topology, "content/problems/design-dropbox");
+    expect(v1.criteria.find((c) => c.id === "avail.no-spof")?.earned).toBe(0);
+    expect(v1.criteria.find((c) => c.id === "perf.cache-if-db")?.earned).toBe(0);
+    const v2 = gradeSubmission(LabPresetSchema.parse(v2Replicated).topology, "content/problems/design-dropbox");
+    for (const criterion of v2.criteria) {
+      expect(criterion.earned).toBe(criterion.points);
+    }
+  });
+});

@@ -1,0 +1,6 @@
+[
+  { "q": "How are conflicts resolved?", "a": "Last-writer-wins with version vectors this round; CRDTs are the follow-up." },
+  { "q": "Whole files or chunks?", "a": "Content-defined chunks: deduplication and resume fall out naturally." },
+  { "q": "Offline edits?", "a": "Must sync on reconnect without losing writes — retries are guaranteed, plan for duplicates." },
+  { "q": "What scale?", "a": "See scale.json — and say which part breaks first at 10x." }
+]

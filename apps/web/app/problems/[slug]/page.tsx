@@ -10,6 +10,8 @@ const SIBLINGS: { slug: string; title: string }[] = [
   { slug: "design-url-shortener", title: "Design a URL Shortener" },
   { slug: "design-twitter", title: "Design Twitter" },
   { slug: "design-video", title: "Design a Video Service" },
+  { slug: "design-chat", title: "Design a Chat Service" },
+  { slug: "design-dropbox", title: "Design a File Sync Service" },
 ];
 
 export function generateStaticParams(): { slug: string }[] {
@@ -19,10 +21,12 @@ export function generateStaticParams(): { slug: string }[] {
 export default async function ProblemPage({ params }: { params: { slug: string } }): Promise<ReactElement> {
   const problem = getProblem(params.slug);
   const { content } = await compileMDX({ source: problem.briefMdx });
-  const estimationBands: { qps: [number, number]; storageGb: [number, number]; bandwidthMbps: [number, number] } =
-    params.slug === "design-twitter"
-      ? { qps: [50000, 5000000], storageGb: [1000000, 1000000000], bandwidthMbps: [100, 100000] }
-      : { qps: [100, 20000], storageGb: [100, 10000], bandwidthMbps: [1, 1000] };
+  const bands: Record<string, { qps: [number, number]; storageGb: [number, number]; bandwidthMbps: [number, number] }> = {
+    "design-twitter": { qps: [50000, 5000000], storageGb: [1000000, 1000000000], bandwidthMbps: [100, 100000] },
+    "design-chat": { qps: [10000, 1000000], storageGb: [100000, 100000000], bandwidthMbps: [100, 100000] },
+    "design-dropbox": { qps: [1000, 100000], storageGb: [100000000, 1000000000000], bandwidthMbps: [1000, 1000000] },
+  };
+  const estimationBands = bands[params.slug] ?? { qps: [100, 20000], storageGb: [100, 10000], bandwidthMbps: [1, 1000] };
   return (
     <main>
       <p className="mt-8 font-mono text-sm text-smoke">01 Brief</p>

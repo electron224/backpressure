@@ -3,6 +3,7 @@ import Link from "next/link";
 import "./globals.css";
 import { ThemeToggle } from "../components/theme-toggle";
 import { AssistantSidebar } from "../components/assistant-sidebar";
+import { SessionWidget } from "../components/session-widget";
 
 const THEME_SCRIPT = `(function(){try{var t=localStorage.getItem("bp:theme");if(!t)t=window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";if(t==="dark")document.documentElement.classList.add("dark");}catch(e){}})();`;
 
@@ -25,7 +26,8 @@ export default function RootLayout({ children }: { children: ReactNode }): JSX.E
               <Link href="/coach">Coach</Link>
               <Link href="/fixits">Fix it</Link>
             </nav>
-            <span className="ml-auto">
+            <span className="ml-auto flex items-center gap-4">
+              <SessionWidget />
               <ThemeToggle />
             </span>
           </div>

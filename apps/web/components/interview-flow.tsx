@@ -20,6 +20,20 @@ export const PHASES: InterviewPhase[] = [
   { id: "deep-dive", name: "Deep dive", minutes: 12 },
 ];
 
+// What the interviewer assesses in each phase. Static guidance shown
+// up front so candidates know what good looks like before they start.
+const PHASE_INTROS: Record<string, string> = {
+  requirements:
+    "Interviewers assess scope discipline here: top 3 functional requirements, measurable non-functionals, explicit out-of-scope. Long lists hurt more than short ones.",
+  estimation:
+    "They check arithmetic, not accuracy: show QPS, storage, and bandwidth math. Order-of-magnitude ranges pass; hidden math fails.",
+  api: "They look for entities first, then endpoints shaped by access patterns. Name the data before the routes.",
+  design:
+    "Simple and complete beats clever and half-drawn. Satisfy the API end to end first; note where caches and queues will go later.",
+  "deep-dive":
+    "Depth over breadth: two deep components beat five shallow ones. Expect probes on your weakest part — defend with numbers from your run.",
+};
+
 interface TranscriptEntry {
   phase: string;
   payload: unknown;
@@ -38,6 +52,12 @@ function checkEstimation(
   if (!(bandwidthMbps >= bands.bandwidthMbps[0] && bandwidthMbps <= bands.bandwidthMbps[1])) notes.push(`Bandwidth ${bandwidthMbps}Mbps looks off: check bytes times QPS arithmetic.`);
   return notes;
 }
+
+const NEXT_LABS: Record<string, string[]> = {
+  availability: ["single-point-of-failure", "health-checks-and-circuit-breakers"],
+  performance: ["load-balancing", "caching-strategies"],
+  communication: ["back-of-envelope-estimation"],
+};
 
 const DEEP_DIVE_PROBES: Record<string, string> = {
   availability: "Your weakest dimension is availability: which single failure hurts most, and what exactly survives it?",
@@ -173,6 +193,10 @@ export function InterviewFlow({
           )
           .map((probe) => ({ question: probe.question, why: probe.why }));
         setCoachState({ summary: (feedback as { summary: string }).summary, probes });
+        log("deep-dive", {
+          coachSummary: (feedback as { summary: string }).summary,
+          coachProbes: probes.map((probe) => probe.question),
+        });
       } else {
         setCoachError("coach returned an unshaped response");
       }
@@ -196,6 +220,10 @@ export function InterviewFlow({
             </li>
           ))}
         </ol>
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed">
+          <span className="font-bold">What they assess: </span>
+          {PHASE_INTROS[phase.id] ?? ""}
+        </p>
         <p className="mt-2 font-mono text-sm" aria-live="polite">
           Time left in {phase.name}: {minutes}:{String(seconds).padStart(2, "0")}
           {secondsLeft === 0 ? " — time; move on when ready." : ""}
@@ -364,7 +392,7 @@ export function InterviewFlow({
                 disabled={coachLoading}
                 onClick={() => void askCoach()}
               >
-                {coachLoading ? "Asking coach…" : "Ask coach for probes"}
+                {coachLoading ? "Asking coach…" : coachState !== null ? "Ask follow-up" : "Ask coach for probes"}
               </button>
               {coachError !== null && <p className="mt-2 font-bold text-ember">{coachError}</p>}
               {coachState !== null && (
@@ -403,6 +431,36 @@ export function InterviewFlow({
                 Commit answer
               </button>
               {deepDiveDone && <p className="mt-2">Answer recorded in your transcript.</p>}
+              {deepDiveDone && report !== null && weakest !== null && (
+                <div className="mt-4 border-t border-ink/20 pt-4">
+                  <h3 className="font-bold">Final report</h3>
+                  <p className="mt-2">
+                    Total: {report.total}/100. Strongest:{" "}
+                    {(() => {
+                      const scored = report.dimensions.filter((d) => d.possible > 0);
+                      let best: (typeof scored)[number] | null = null;
+                      for (const dimension of scored) {
+                        if (best === null || dimension.earned / dimension.possible > best.earned / best.possible) {
+                          best = dimension;
+                        }
+                      }
+                      return best?.id ?? "—";
+                    })()}
+                    . Weakest: {weakest.id}.
+                  </p>
+                  <p className="mt-2">
+                    Next labs:{" "}
+                    {(NEXT_LABS[weakest.id] ?? []).map((slug, i, list) => (
+                      <span key={slug}>
+                        <a href={`/concepts/${slug}`} className="hover:text-ember">
+                          {slug}
+                        </a>
+                        {i < list.length - 1 ? ", " : ""}
+                      </span>
+                    ))}
+                  </p>
+                </div>
+              )}
             </>
           )}
           <p className="mt-3 font-mono text-sm text-smoke">Transcript entries: {transcript.length}</p>

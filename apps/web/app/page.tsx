@@ -27,13 +27,13 @@ export default function Home(): JSX.Element {
       <TrackList tracks={tracks} />
       <h2 className="mt-10 border-t border-ink/20 pt-4 text-xl font-bold">Design interviews</h2>
       <p className="mt-3">
-        Finish Tier 2 first — interviews assume it. Then{" "}
-        <Link href="/design" className="hover:text-ember">
-          open the design canvas
+        Finish Tier 2 first — interviews assume it. Then browse all five{" "}
+        <Link href="/problems" className="hover:text-ember">
+          mock loops
         </Link>
         ,{" "}
-        <Link href="/problems/design-url-shortener" className="hover:text-ember">
-          take the URL shortener interview
+        <Link href="/design" className="hover:text-ember">
+          open the design canvas
         </Link>
         , repair a{" "}
         <Link href="/fixits" className="hover:text-ember">

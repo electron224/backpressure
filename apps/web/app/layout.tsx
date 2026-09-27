@@ -22,7 +22,7 @@ export default function RootLayout({ children }: { children: ReactNode }): JSX.E
             <nav aria-label="Primary" className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
               <Link href="/">Labs</Link>
               <Link href="/design">Design canvas</Link>
-              <Link href="/problems/design-url-shortener">Interview: URL shortener</Link>
+              <Link href="/problems">Interviews</Link>
               <Link href="/coach">Coach</Link>
               <Link href="/fixits">Fix it</Link>
             </nav>

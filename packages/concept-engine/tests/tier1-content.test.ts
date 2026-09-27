@@ -40,6 +40,23 @@ describe("latency-and-throughput content", () => {
     expect(faster.verdict).toBe("PASS");
     expect(faster.p99).toBeLessThan(heavy.p99);
   });
+
+  it("replica add-on flips 80 RPS from FAIL to PASS", () => {
+    const preset = LabPresetSchema.parse(latency);
+    const addon = preset.addons?.find((a) => a.id === "replicas");
+    if (addon === undefined) throw new Error("missing replicas addon");
+    const merged = {
+      ...preset,
+      topology: {
+        nodes: [...preset.topology.nodes, ...addon.topology.nodes],
+        edges: [...preset.topology.edges, ...addon.topology.edges],
+      },
+    };
+    expect(runPreset(preset, { rps: 80 }).verdict).toBe("FAIL");
+    const fixed = runPreset(merged, { rps: 80 });
+    expect(fixed.verdict).toBe("PASS");
+    expect(fixed.p99).toBeLessThan(150);
+  });
 });
 
 describe("vertical-vs-horizontal-scaling content", () => {

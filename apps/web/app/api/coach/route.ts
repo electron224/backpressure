@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { coachAsk, coachDeepDive } from "@backpressure/coach";
+import { coachAsk, coachDeepDive, parsePersona } from "@backpressure/coach";
 import type { ProviderEnv } from "@backpressure/coach";
 import type { Topology } from "@backpressure/concept-engine";
 
@@ -91,6 +91,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         phase: typeof input["phase"] === "string" ? input["phase"] : "deep-dive",
         topology: input["topology"],
         weakness: typeof input["weakness"] === "string" ? input["weakness"] : "availability",
+        persona: parsePersona(input["persona"]),
         structural: stringList(input["structural"]),
         verdicts: verdictList(input["verdicts"]),
         transcript: Array.isArray(input["transcript"]) ? input["transcript"].map((entry) => ({ phase: "unknown", payload: entry })) : [],

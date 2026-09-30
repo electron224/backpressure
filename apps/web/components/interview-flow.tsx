@@ -4,6 +4,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { GradeForm } from "./grade-form";
 import type { GradeDimension, GradeReport, ScenarioDef } from "@backpressure/coach/grade-core";
+import { PERSONAS } from "@backpressure/coach/persona-data";
+import type { Persona } from "@backpressure/coach/persona-data";
+import { CONSTRAINT_CARDS } from "@backpressure/coach/cards-data";
+import type { ConstraintCard } from "@backpressure/coach/cards-data";
+import { DictateButton, ReadAloudButton } from "./voice-controls";
 import type { Topology } from "@backpressure/concept-engine";
 
 export interface InterviewPhase {
@@ -93,6 +98,16 @@ export function InterviewFlow({
   const [coachState, setCoachState] = useState<{ summary: string; probes: { question: string; why: string }[] } | null>(null);
   const [coachError, setCoachError] = useState<string | null>(null);
   const [coachLoading, setCoachLoading] = useState<boolean>(false);
+  const [persona, setPersona] = useState<Persona>(() => {
+    try {
+      const saved = window.localStorage.getItem("bp:persona");
+      return saved === "silent" || saved === "adversarial" || saved === "collaborative" ? saved : "collaborative";
+    } catch {
+      return "collaborative";
+    }
+  });
+  const [card, setCard] = useState<ConstraintCard | null>(null);
+  const [seenCardIds, setSeenCardIds] = useState<string[]>([]);
 
   const phase = PHASES[phaseIndex];
   if (phase === undefined) throw new Error("interview phase out of range");
@@ -115,6 +130,24 @@ export function InterviewFlow({
       // Private mode etc: transcript simply does not persist.
     }
   }, [transcript, slug]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("bp:persona", persona);
+    } catch {
+      // Persona simply does not persist.
+    }
+  }, [persona]);
+
+  function flipCard(): void {
+    const pool = CONSTRAINT_CARDS.filter((candidate) => !seenCardIds.includes(candidate.id));
+    const candidates = pool.length > 0 ? pool : CONSTRAINT_CARDS;
+    const pick = candidates[Math.floor(Math.random() * candidates.length)];
+    if (pick === undefined) return;
+    setCard(pick);
+    setSeenCardIds((prev) => [...prev, pick.id]);
+    log("design", { constraintCard: pick.id });
+  }
 
   function log(phaseId: string, payload: unknown): void {
     setTranscript((prev) => [...prev, { phase: phaseId, payload, at: Date.now() }]);
@@ -163,6 +196,7 @@ export function InterviewFlow({
           phase: "deep-dive",
           topology,
           weakness: weakest.id,
+          persona,
           structural: report.structural,
           verdicts: report.verdicts,
           transcript,
@@ -234,6 +268,28 @@ export function InterviewFlow({
             Skip to design (flagged in transcript)
           </button>
         )}
+        <fieldset className="mt-3">
+          <legend className="font-mono text-sm">Interviewer persona</legend>
+          <div className="mt-1 flex flex-wrap gap-2">
+            {PERSONAS.map((option) => (
+              <label key={option.id} className="flex min-h-[44px] cursor-pointer items-center gap-2 border border-ink/30 px-3 py-1.5 text-sm">
+                <input
+                  type="radio"
+                  name={`persona-${slug}`}
+                  value={option.id}
+                  checked={persona === option.id}
+                  onChange={() => {
+                    setPersona(option.id);
+                    setCoachState(null);
+                  }}
+                />
+                <span>
+                  <span className="font-bold">{option.label}</span> <span className="text-smoke">— {option.blurb}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
       </section>
 
       {phase.id === "requirements" && (
@@ -359,6 +415,22 @@ export function InterviewFlow({
       {phase.id === "design" && (
         <section aria-label="High-level design" className="mt-8 border-t border-ink/20 pt-4">
           <h2 className="text-xl font-bold">High-level design (15 min: the canvas counts)</h2>
+          <div className="mt-3 max-w-2xl border border-ink/30 p-3">
+            <h3 className="font-bold">Constraint card</h3>
+            <p className="mt-1 text-sm leading-relaxed">
+              Mid-design flip, like a real loop changing requirements. Optional, logged in your transcript.
+            </p>
+            <button type="button" className="mt-2 border border-ink px-3 py-1.5 min-h-[44px] text-sm" onClick={flipCard}>
+              {card === null ? "Flip a constraint card" : "Flip another"}
+            </button>
+            {card !== null && (
+              <div className="mt-2 border-t border-ink/20 pt-2" aria-live="polite">
+                <p className="font-bold">{card.title}</p>
+                <p className="mt-1 text-sm leading-relaxed">{card.body}</p>
+                <p className="mt-1 text-sm text-smoke">{card.probe}</p>
+              </div>
+            )}
+          </div>
           <GradeForm
             rubric={rubric}
             scenarios={scenarios}
@@ -394,6 +466,7 @@ export function InterviewFlow({
               >
                 {coachLoading ? "Asking coach…" : coachState !== null ? "Ask follow-up" : "Ask coach for probes"}
               </button>
+              <p className="mt-1 font-mono text-sm text-smoke">Persona: {persona}. Change it above; probes follow the dial.</p>
               {coachError !== null && <p className="mt-2 font-bold text-ember">{coachError}</p>}
               {coachState !== null && (
                 <div className="mt-3 max-w-2xl">
@@ -405,6 +478,12 @@ export function InterviewFlow({
                       </li>
                     ))}
                   </ul>
+                  <div className="mt-2">
+                    <ReadAloudButton
+                      label="Read probes aloud"
+                      text={`${coachState.summary}. ${coachState.probes.map((probe) => probe.question).join(" ")}`}
+                    />
+                  </div>
                 </div>
               )}
               <p className="mt-3 max-w-2xl leading-relaxed">
@@ -419,6 +498,12 @@ export function InterviewFlow({
                   onChange={(e) => setDeepDiveAnswer(e.currentTarget.value)}
                 />
               </label>
+              <div className="mt-2">
+                <DictateButton
+                  label="Dictate answer"
+                  onText={(text) => setDeepDiveAnswer((prev) => (prev.trim() ? `${prev.trimEnd()} ${text}` : text))}
+                />
+              </div>
               <button
                 type="button"
                 className="mt-3 border border-ember bg-ember px-3 py-1.5 text-paper disabled:opacity-50"

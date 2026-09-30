@@ -51,9 +51,10 @@ describe("coachDeepDive", () => {
 
   it("prompt fences learner data and forbids scores", () => {
     const here = dirname(fileURLToPath(import.meta.url));
-    const prompt = readFileSync(join(here, "..", "prompts", "v1", "deep-dive.md"), "utf8");
+    const prompt = readFileSync(join(here, "..", "prompts", "v2", "deep-dive.md"), "utf8");
     expect(prompt).toContain("learner-data");
     expect(prompt).toContain("NEVER assign scores");
+    expect(prompt).toContain("PERSONA");
   });
 });
 

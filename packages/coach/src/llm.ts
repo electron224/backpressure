@@ -7,11 +7,13 @@ import { z } from "zod";
 import type { Topology } from "@backpressure/concept-engine";
 import { buildProvider, selectProviderName } from "./providers.js";
 import type { ProviderEnv } from "./providers.js";
+import { personaFragment, parsePersona } from "./persona.js";
+import type { Persona } from "./persona.js";
 
 // Server-only module: never import from client components. The API key
 // stays here. Bump RUBRIC_VERSION whenever prompts/ change so cached
 // grades invalidate.
-export const RUBRIC_VERSION = "v1";
+export const RUBRIC_VERSION = "v2";
 const MAX_SESSION_USD = 0.5;
 const MAX_TOKENS = 800;
 
@@ -34,6 +36,7 @@ export interface CoachInput {
   verdicts: { id: string; passed: boolean; observed: number }[];
   transcript: { phase: string; payload: unknown }[];
   attemptId: string;
+  persona?: Persona;
 }
 
 export interface CoachResult {
@@ -45,12 +48,12 @@ export interface CoachResult {
 const here = dirname(fileURLToPath(import.meta.url));
 
 function loadPrompt(): string {
-  return readFileSync(join(here, "..", "prompts", "v1", "deep-dive.md"), "utf8");
+  return readFileSync(join(here, "..", "prompts", "v2", "deep-dive.md"), "utf8");
 }
 
 function hashKey(provider: string, model: string, input: Omit<CoachInput, "attemptId" | "transcript">): string {
   return createHash("sha256")
-    .update(JSON.stringify([provider, model, input.problem, input.phase, input.topology, input.weakness, input.structural, input.verdicts, RUBRIC_VERSION]))
+    .update(JSON.stringify([provider, model, input.problem, input.phase, input.topology, input.weakness, input.structural, input.verdicts, input.persona ?? "collaborative", RUBRIC_VERSION]))
     .digest("hex");
 }
 
@@ -154,9 +157,10 @@ export async function coachDeepDive(input: CoachInput, env?: ProviderEnv): Promi
     throw new Error(`coach budget exhausted for attempt ${input.attemptId} (cap $${MAX_SESSION_USD})`);
   }
 
+  const persona = parsePersona(input.persona);
   const prompt = `${loadPrompt()}\n\nPROBLEM: ${input.problem}\nPHASE: ${input.phase}\nWEAKNESS: ${
     input.weakness
-  }\nSTRUCTURAL: ${JSON.stringify(input.structural)}\nVERDICTS: ${JSON.stringify(input.verdicts)}\n${fenceLearnerData(input)}`;
+  }\nSTRUCTURAL: ${JSON.stringify(input.structural)}\nVERDICTS: ${JSON.stringify(input.verdicts)}\nPERSONA: ${persona}\n${personaFragment(persona)}\n${fenceLearnerData(input)}`;
 
   let raw = "";
   let completion = { text: "", inputTokens: 0, outputTokens: 0 };

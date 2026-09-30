@@ -18,6 +18,9 @@ if (process.env["GITHUB_ID"] && process.env["GITHUB_SECRET"]) {
 const result: NextAuthResult = NextAuth({
   session: { strategy: "jwt" },
   providers,
+  // Opt-in host trust for non-Vercel hosts (e2e on an arbitrary port).
+  // Vercel sets nextHost behind the edge, so production keeps the default.
+  trustHost: process.env["TRUST_HOST"] === "true",
   callbacks: {
     async signIn({ user }) {
       if (user.email) {

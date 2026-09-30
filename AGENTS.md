@@ -372,3 +372,44 @@ Store topologies as versioned JSON with a `schema_version`. Write a migration wh
 **M5 — Scale ladder, post-mortem mode, voice.**
 
 Resist the temptation to jump to M3. The moat is M0–M2; the design problems are table stakes that everyone already has.
+
+---
+
+## 14. Build log (session of 2026-09-19, 116 commits)
+
+Status when written: 235/235 Vitest green, `tsc` clean, 59/59 pages prerender, `pnpm content:lint` clean. Remote: `github.com/electron224/backpressure`, branch `master`.
+
+**Shipped, per milestone:**
+- M0: `sim-core` (xorshift128+, virtual clock, priority queue, zero deps) + client/LB/service; load-balancing lab (RR 2078 FAIL vs LC 146 PASS at 80 RPS, seed 7).
+- M1: concept engine (schemas, predict-then-reveal, deterministic chaos, localStorage progress), Tier 1 (5) + Tier 2 (load-balancing, gateway, CDN, rate-limiting, health-checks/breaker); generic preset interpreter (`runPreset`).
+- Tiers 3–6 + extras: 34 concepts total (Tier 3: caching, eviction+zipfian, replication, sharding, consistent-hashing ring, sql-vs-nosql, indexing; Tier 4: CAP flagship with partition window, PACELC, consistency, quorums, idempotency, saga, leader-election; Tier 5: queues, fan-out, pub-sub, backpressure/DLQ, CDC; Tier 6: observability, SLO budgets, graceful degradation, deployment, capacity+cost model). cache-invalidation folded into CDN + caching-strategies (no separate concept).
+- Sim components: rate-limiter (token-bucket + sliding-window), cache (TTL/capacity/LRU/LFU/FIFO, write policies), database (async/sync versions, partition CP/AP, quorum replicas), shard-router (mod + consistent ring), dedup, pipe, queue (drain/poison DLQ), fan-out (+writeOnly), breaker in LB, weighted LB, service read/write latency split.
+- Engine extensions (alldeterminism-preserving, legacy byte-identical): writeRatio, retryRatio, zipfian keys, per-request completion traces, metric series.
+- M2: canvas (`packages/canvas` compiler + palette), structural checks + unified registry (`packages/coach`), `/design` page.
+- M3+: 5 interview problems (url-shortener, twitter, video, chat, dropbox) with deterministic grading (v1-fails/v2-passes pinned), 5-phase timed flow, scale ladder, post-mortem mode (2 incidents), fix-it mode (3 scenarios), guided tracks + progress + readiness, glossary, dark mode, Ask sidebar (session-only BYOK), multi-provider coach (Anthropic/OpenAI-compatible/Gemini) with fenced prompts + budget cap.
+- M4 slice: Drizzle schema + migration, FSRS-4.5 scheduler, GitHub auth (JWT, lazy users row), `/login`, cost model surfaced per run.
+- Design: instrument-panel identity (ink masthead constant both modes, mono numerals, numbered stages, ember reserved for fail/actions). SVG charts adapt via CSS theme tokens — never hardcode hex in SVG (invisible in dark mode).
+
+**Deliberate deviations from the original doc (all committed with reasons):**
+- Challenges removed everywhere (user call): Stress section, all `challenges.json`, lab `challenges` arrays. Replaced by component add-ons in labs + fix-it mode. `ChallengesSchema` retained for problem files.
+- leaky-bucket, ARC, single-flight, per-key limiting, active health probes, mid-run faults: Learn prose + recorded follow-ups, not code.
+- Sticky load, unrequested extras, and silent discards are forbidden: reviewer findings are fixed or ledgered, never dropped.
+
+**2026-09-30 session:** persona dial (silent/collaborative/adversarial; localStorage-persisted; deep-dive coach on `prompts/v2/`, cache key + `RUBRIC_VERSION` bumped to v2) and constraint cards (5-card deck; client-safe `persona-data.ts`/`cards-data.ts` split from server-only loaders; flips logged to transcript) in the interview flow. Playwright e2e gate: `playwright.config.ts` + `e2e/`, 10 tests — home/lab/design smoke, sim determinism across reloads, the §10.6 injection attack pinned against `/api/coach`, persona + card UI. `TRUST_HOST` opt-in in `auth.ts` for non-Vercel hosts; e2e webServer strips provider keys so coach routes stay on the deterministic fallback. Voice-first mode: deep-dive dictation into the answer box + read-probes-aloud, client-only Web Speech API (`voice-controls.tsx`, ambient types in `apps/web/types/webkit-speech.d.ts`), honest "unavailable" note on unsupported browsers.
+
+Turborepo adopted (`turbo.json` build/dev pipelines, `pnpm gate` chains tsc + vitest + content:lint + turbo web build + e2e; Turbo 2 skips root tasks so the gate stays a raw chain, turbo owns the workspace build).
+
+**Still open:** LLM live calls need a key (fallback otherwise); timed flow has no transcript server sync (localStorage only, DB unapplied — no Docker here); email magic link, peer review, readiness scores (needs real data — no fake number).
+
+**Ops notes:** dev servers die between agent turns — always `pkill -f "next dev"; rm -rf apps/web/.next` before restarting. `.env.local` lives in `apps/web/` (Next ignores the repo root). `drizzle-orm` + `postgres` are in `serverComponentsExternalPackages` (dev vendor-chunks break under pnpm otherwise). Auth route handlers must be explicit `export function GET/POST` wrappers — the destructured `export const { GET, POST }` form 404s in `next dev`. Never import non-component exports from `"use client"` modules into server components (parse errors surface as `n is not a function`). Web tsconfig uses `moduleResolution: bundler` (node10 ignores the exports map). Exact-optional-property + noUncheckedIndexedAccess bite regularly: conditional spreads, iteration over indexing.
+
+<!-- BEGIN:turborepo-agent-rules -->
+
+# This is NOT the Turborepo you know
+
+Turborepo configuration, task behavior, and CLI commands can vary between installed versions and may differ from your training data. Resolve the `turbo` package from this file's directory or relevant workspace; in monorepos, it may not be visible from the repository root. For example, run `node -p "require.resolve('turbo/package.json')"` from a workspace that depends on `turbo`.
+
+Read `docs/README.md` inside that installed package first, then read the relevant pages from its `docs/` directory before changing Turborepo configuration or commands. Heed deprecation notices. These bundled docs match the installed package version and are available without network access.
+
+This block is written and re-added by `turbo` before repository-scoped commands when an AI agent is detected. In the Turborepo source repository, its template is defined in `crates/turborepo-cli/src/cli/agent_guidance.rs`. Removing the managed block while updates are enabled means a later qualifying invocation will add it again. Set `"agentGuidance": false` in the root `turbo.json` or `turbo.jsonc` to opt out; this does not remove an existing block. Keep the block committed with your work to avoid an uncommitted change on the next agent invocation.
+<!-- END:turborepo-agent-rules -->

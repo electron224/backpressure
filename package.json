@@ -3,16 +3,22 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "packageManager": "pnpm@8.6.12",
   "scripts": {
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "demo": "npx -y tsx demo/run.ts",
-    "content:lint": "tsx tools/content-lint/lint.ts"
+    "content:lint": "tsx tools/content-lint/lint.ts",
+    "db:migrate": "drizzle-kit migrate",
+    "test:e2e": "playwright test",
+    "gate": "pnpm typecheck && pnpm test && pnpm content:lint && turbo run build --filter=@backpressure/web && pnpm test:e2e"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@types/node": "^26.6.2",
     "drizzle-kit": "^0.31.11",
     "tsx": "4.19.2",
+    "turbo": "^2.11.5",
     "typescript": "5.6.3",
     "vitest": "2.1.8"
   },

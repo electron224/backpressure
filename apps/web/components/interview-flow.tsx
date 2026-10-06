@@ -9,6 +9,8 @@ import type { Persona } from "@backpressure/coach/persona-data";
 import { CONSTRAINT_CARDS } from "@backpressure/coach/cards-data";
 import type { ConstraintCard } from "@backpressure/coach/cards-data";
 import { DictateButton, ReadAloudButton } from "./voice-controls";
+import { ReferenceDiffView } from "./reference-diff-view";
+import { getReferences } from "../lib/references";
 import type { Topology } from "@backpressure/concept-engine";
 
 export interface InterviewPhase {
@@ -440,6 +442,9 @@ export function InterviewFlow({
             }}
             onTopology={(topo) => setTopology(topo)}
           />
+          {topology !== null && (
+            <ReferenceDiffView theirs={topology} references={getReferences(slug)} />
+          )}
           <button
             type="button"
             className="mt-3 border border-ink px-3 py-1.5 disabled:opacity-50"

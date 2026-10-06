@@ -8,7 +8,8 @@
     "./checks": "./src/checks.ts",
     "./grade-core": "./src/grade-core.ts",
     "./persona-data": "./src/persona-data.ts",
-    "./cards-data": "./src/cards-data.ts"
+    "./cards-data": "./src/cards-data.ts",
+    "./reference-diff": "./src/reference-diff.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.32.1",

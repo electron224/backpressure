@@ -10,5 +10,7 @@ export { PERSONAS, PersonaSchema, parsePersona, personaFragment } from "./person
 export type { Persona } from "./persona.js";
 export { CONSTRAINT_CARDS, ConstraintCardSchema, drawConstraintCard } from "./cards.js";
 export type { ConstraintCard } from "./cards.js";
+export { diffAgainstReference, summarizeDiff } from "./reference-diff.js";
+export type { ReferenceDiff, ReferenceDiffEntry } from "./reference-diff.js";
 export { buildProvider, selectProviderName } from "./providers.js";
 export type { ChatProvider, ProviderCompletion, ProviderEnv, ProviderName } from "./providers.js";
